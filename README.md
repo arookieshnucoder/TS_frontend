@@ -1,42 +1,47 @@
-# frontend
+# 松间 Chat
 
-This template should help get you started developing with Vue 3 in Vite.
+基于 Vue 3、TypeScript 和 Vite 的轻量聊天网页。采用左侧会话列表、右侧聊天记录和底部输入框的布局，使用本地 mock 数据，无需后端或 API Key。
 
-## Recommended IDE Setup
+## 开发与构建
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
-
-## Recommended Browser Setup
-
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
-
-## Type Support for `.vue` Imports in TS
-
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
+Node.js 版本要求见 `package.json` 的 `engines` 字段。
 
 ```sh
 npm install
-```
-
-### Compile and Hot-Reload for Development
-
-```sh
 npm run dev
 ```
 
-### Type-Check, Compile and Minify for Production
-
 ```sh
+npm run type-check
 npm run build
+npm run preview
 ```
+
+## 已实现
+
+- 新建、切换、按标题搜索会话，按今天和更早的对话分组。
+- 欢迎页话题卡片，点击即可发送对应问题。
+- Enter 发送、Shift + Enter 换行，兼容中文输入法确认操作。
+- 模拟逐字回复、思考状态、停止生成和回答复制。
+- 文本与围栏代码块展示；内容作为文本渲染，不执行 HTML。
+- 使用 localStorage 保存会话和当前会话；刷新时恢复，中断的回复标记为停止。
+- 桌面可折叠侧栏，手机抽屉侧栏和自适应输入框。
+
+## 代码结构
+
+```text
+src/
+  App.vue                       页面布局及输入交互
+  styles.css                    全局样式与响应式布局
+  components/AppIcon.vue        SVG 图标
+  components/MessageContent.vue 消息文本与代码块
+  composables/useChat.ts        会话状态、存储及模拟流式回复
+  data/mock.ts                  初始会话及模拟回复
+  types/chat.ts                 消息与会话类型
+```
+
+## 接入真实模型
+
+目前 `getMockReply()` 根据关键词返回预设内容，不会请求 LLM，也不具备真实的上下文推理。后续可在 `useChat.ts` 中将 mock 文本与定时器替换为后端流式接口，沿用现有消息状态；停止生成时取消对应请求。
+
+对话保存在当前浏览器的 `songjian-chat-v1` 存储键中，不跨设备同步。暂不包含登录、附件、语音和模型选择。
