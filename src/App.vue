@@ -11,6 +11,10 @@ const {
   activeId,
   generatingId,
   storageError,
+  apiError,
+  isLoading,
+  isPending,
+  loadSessions,
   createSession,
   selectSession,
   sendMessage,
@@ -79,15 +83,15 @@ function resizeInput() {
   input.value.style.height = 'auto'
   input.value.style.height = `${Math.min(input.value.scrollHeight, 180)}px`
 }
-function openSession(id: string) {
+async function openSession(id: string) {
+  if (!(await selectSession(id))) return
   followLatest.value = true
-  selectSession(id)
   draft.value = ''
   if (window.innerWidth <= 760) sidebarOpen.value = false
   nextTick(resizeInput)
 }
-function newChat() {
-  createSession()
+async function newChat() {
+  if (!(await createSession())) return
   query.value = ''
   followLatest.value = true
   draft.value = ''
@@ -97,11 +101,11 @@ function newChat() {
     input.value?.focus()
   })
 }
-function submit(text = draft.value) {
-  if (!text.trim() || isGenerating.value) return
+async function submit(text = draft.value) {
+  if (!text.trim() || isGenerating.value || isPending.value || isLoading.value) return
   followLatest.value = true
-  sendMessage(text)
-  draft.value = ''
+  if (!(await sendMessage(text))) return
+  if (draft.value === text) draft.value = ''
   nextTick(() => {
     resizeInput()
     input.value?.focus()
@@ -166,7 +170,7 @@ onBeforeUnmount(() => clearTimeout(copyTimer))
           <AppIcon name="panel" />
         </button>
       </div>
-      <button class="new-chat-button" @click="newChat">
+      <button class="new-chat-button" :disabled="isLoading || isPending" @click="newChat">
         <AppIcon name="plus" /> 开启新对话
         <AppIcon name="compose" class="new-chat-end" />
       </button>
@@ -185,6 +189,7 @@ onBeforeUnmount(() => clearTimeout(copyTimer))
           <button
             v-for="session in group.sessions"
             :key="session.id"
+            :disabled="isLoading || isPending"
             class="session-item"
             :class="{ active: activeId === session.id }"
             :aria-current="activeId === session.id ? 'page' : undefined"
@@ -296,6 +301,11 @@ onBeforeUnmount(() => clearTimeout(copyTimer))
       </div>
 
       <footer class="composer-area">
+        <p v-if="apiError" class="notice" role="alert">
+          {{ apiError }}
+          <button type="button" :disabled="isLoading || isPending" @click="loadSessions">??????</button>
+        </p>
+        <p v-if="isPending" class="notice" role="status">???????</p>
         <p v-if="storageError || copyError" class="notice" role="status">
           {{ storageError || copyError }}
         </p>
@@ -327,7 +337,7 @@ onBeforeUnmount(() => clearTimeout(copyTimer))
                 v-else
                 type="submit"
                 class="send-button"
-                :disabled="!draft.trim()"
+                :disabled="!draft.trim() || isLoading || isPending"
                 aria-label="发送消息"
                 title="发送消息"
               >
