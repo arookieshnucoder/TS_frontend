@@ -13,6 +13,7 @@ const {
   apiError,
   isLoading,
   isPending,
+  isTyping,
   loadSessions,
   createSession,
   selectSession,
@@ -302,7 +303,7 @@ onBeforeUnmount(() => clearTimeout(copyTimer))
 
       <footer class="composer-area">
         <p v-if="activeSession" class="notice session-status" :data-status="activeSession.sessionStatus" role="status">
-          {{ statusLabels[activeSession.sessionStatus] }}
+          {{ isTyping ? '正在显示回复' : statusLabels[activeSession.sessionStatus] }}
         </p>
         <p v-if="activeSession?.sessionStatus === 'failure'" class="notice session-failure" role="alert">
           {{ activeSession.sessionError?.message || '模型接口未正确返回，请稍后重试。' }}
@@ -312,7 +313,7 @@ onBeforeUnmount(() => clearTimeout(copyTimer))
           {{ apiError }}
           <button type="button" :disabled="isLoading || isPending" @click="loadSessions">重新加载</button>
         </p>
-        <p v-if="isPending" class="notice" role="status">正在处理，请稍候…</p>
+        <p v-if="isPending" class="notice" role="status">{{ isTyping ? '点击停止按钮可立即显示完整回复。' : '正在处理，请稍候…' }}</p>
         <p v-if="copyError" class="notice" role="status">
           {{ copyError }}
         </p>
@@ -335,8 +336,8 @@ onBeforeUnmount(() => clearTimeout(copyTimer))
                 v-if="isSending"
                 type="button"
                 class="send-button stop-button"
-                aria-label="停止生成"
-                title="停止生成"
+                :aria-label="isTyping ? '显示完整回复' : '停止生成'"
+                :title="isTyping ? '显示完整回复' : '停止生成'"
                 @click="stopGeneration"
               >
                 <AppIcon name="stop" /></button

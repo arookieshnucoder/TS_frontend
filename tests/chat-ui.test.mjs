@@ -22,13 +22,14 @@ test('sidebar renders server history, searches and selects; form sends and rende
   }], server: { middlewareMode: true, hmr: { port: 0 } }, appType: 'custom' })
   const originalFetch = globalThis.fetch
   let fail = false
+  const reply = '这是一段逐字显示的模型回答，包含组合表情 👨‍👩‍👧‍👦 和代码。'.repeat(5)
   const sessions = [{ id:'server-1',title:'服务端历史',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),
     sessionStatus:'finished',sessionError:null,modelRequestId:null,messages:[{id:'u1',role:'user',content:'历史问题'},{id:'a1',role:'assistant',content:'历史回答'}] }]
   globalThis.fetch = async (path, options) => {
     if (fail) throw new Error('offline')
     if (options?.method === 'POST') {
       const { content } = JSON.parse(options.body)
-      sessions[0].messages.push({id:'u2',role:'user',content},{id:'a2',role:'assistant',content:'模型回答'})
+      sessions[0].messages.push({id:'u2',role:'user',content},{id:'a2',role:'assistant',content:reply})
       return Response.json({data:sessions[0]})
     }
     return Response.json({data: String(path).endsWith('/sessions') ? sessions : sessions[0]})
@@ -52,7 +53,13 @@ test('sidebar renders server history, searches and selects; form sends and rende
     const input = root.querySelector('textarea')
     input.value='新问题'; input.dispatchEvent(new window.Event('input')); await nextTick()
     root.querySelector('form').dispatchEvent(new window.Event('submit',{cancelable:true})); await settle()
-    assert.match(root.querySelector('.messages').textContent,/模型回答/)
+    const displayed = root.querySelectorAll('.assistant-body .message-content')[1].textContent
+    assert.ok(displayed.length > 0 && displayed.length < reply.length, 'new reply is revealed incrementally')
+    assert.ok(root.querySelector('.stream-cursor'))
+    assert.ok(root.querySelector('button[aria-label="显示完整回复"]'))
+    root.querySelector('button[aria-label="显示完整回复"]').click(); await settle()
+    assert.ok(root.querySelectorAll('.assistant-body .message-content')[1].textContent.includes(reply))
+    assert.equal(root.querySelector('.stream-cursor'), null)
     assert.equal(input.value,'')
     assert.equal(root.querySelector('.session-status').dataset.status, 'finished')
     fail=true

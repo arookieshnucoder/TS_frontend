@@ -1,5 +1,5 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import type { ChatSession } from '../types/chat'
+import type { ChatSession, Message } from '../types/chat'
 import { chatApi, ChatApiError, type SessionDto } from '../api/chat'
 
 export function useChat() {
@@ -8,10 +8,53 @@ export function useChat() {
   const apiError = ref('')
   const isLoading = ref(true)
   const isPending = ref(false)
+  const isTyping = ref(false)
   const pendingSessionId = ref<string | null>(null)
   const activeSession = computed(() => sessions.value.find(session => session.id === activeId.value))
   let disposed = false
   let generation: AbortController | undefined
+  let finishTyping: (() => void) | undefined
+  function revealReply(message: Message): Promise<void> {
+    if (!message.content || (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+      return Promise.resolve()
+    }
+    const fullContent = message.content
+    // Keep emoji, combining marks and joined characters intact while revealing text.
+    const characters = Array.from(new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(fullContent), part => part.segment)
+    const rate = Math.max(80 / 1000, characters.length / 8000)
+    const started = performance.now()
+    message.content = ''
+    message.status = 'streaming'
+    isTyping.value = true
+    return new Promise(resolve => {
+      let timer: ReturnType<typeof setTimeout> | undefined
+      let finished = false
+      const finish = () => {
+        if (finished) return
+        finished = true
+        clearTimeout(timer)
+        if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisibilityChange)
+        message.content = fullContent
+        message.status = 'complete'
+        isTyping.value = false
+        finishTyping = undefined
+        resolve()
+      }
+      const onVisibilityChange = () => { if (document.hidden) finish() }
+      const tick = () => {
+        const count = Math.min(characters.length, Math.max(1, Math.floor((performance.now() - started) * rate)))
+        if (count === characters.length) { finish(); return }
+        message.content = characters.slice(0, count).join('')
+        timer = setTimeout(tick, 16)
+      }
+      finishTyping = finish
+      if (typeof document !== 'undefined') {
+        document.addEventListener('visibilitychange', onVisibilityChange)
+        if (document.hidden) { finish(); return }
+      }
+      timer = setTimeout(tick, 16)
+    })
+  }
   const toSession = (dto: SessionDto): ChatSession => ({
     id: dto.id, title: dto.title, updatedAt: Date.parse(dto.updatedAt),
     sessionStatus: dto.sessionStatus, sessionError: dto.sessionError,
@@ -88,7 +131,9 @@ export function useChat() {
       const dto = await chatApi.send(id, content, controller.signal)
       if (disposed || controller.signal.aborted) return false
       replaceSession(dto)
-      return true
+      const reply = sessions.value.find(item => item.id === id)?.messages.at(-1)
+      if (reply?.role === 'assistant') await revealReply(reply)
+      return !disposed
     } catch (error) {
       if (error instanceof ChatApiError && error.session) replaceSession(error.session)
       else {
@@ -109,8 +154,11 @@ export function useChat() {
       isPending.value = false
     }
   }
-  function stopGeneration() { generation?.abort() }
+  function stopGeneration() {
+    if (finishTyping) finishTyping()
+    else generation?.abort()
+  }
   onBeforeUnmount(() => { disposed = true; stopGeneration() })
-  return { sessions, activeId, activeSession, pendingSessionId, apiError, isLoading, isPending,
+  return { sessions, activeId, activeSession, pendingSessionId, apiError, isLoading, isPending, isTyping,
     loadSessions, createSession, selectSession, sendMessage, stopGeneration }
 }
