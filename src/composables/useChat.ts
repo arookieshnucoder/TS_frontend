@@ -76,7 +76,7 @@ export function useChat() {
     let session: ChatSession | undefined
     let originalMessages: ChatSession['messages'] = []
     try {
-      const id = activeId.value || await addSession(content.replace(/\s+/g, ' ').slice(0, 24))
+      const id = activeId.value || await addSession('新对话')
       if (disposed) return false
       session = sessions.value.find(item => item.id === id)!
       originalMessages = [...session.messages]

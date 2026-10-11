@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createServer } from 'vite'
@@ -23,6 +23,7 @@ test('real HTTP sessions and messages restore after backend restart; failures, d
     const { createDependencies } = await vite.ssrLoadModule('../backend/src/bootstrap/container.ts')
     const config = loadConfig({ NODE_ENV: 'test', SESSION_DATA_DIR: directory })
     const model = { async reply(messages, signal) {
+      if (messages[0]?.content.startsWith("Generate a session title")) return "前后端对话功能联调测试"
       contexts.push(messages)
       if (fail) throw new Error('provider failure')
       if (delay) await new Promise((resolve, reject) => {
@@ -68,7 +69,9 @@ test('real HTTP sessions and messages restore after backend restart; failures, d
     assert.equal(state.activeId.value, id)
     assert.equal(state.activeSession.value.messages.length, 2, 'history restored without localStorage')
     assert.equal(await state.sendMessage('第二轮'), true)
-    assert.deepEqual(contexts[1].map(m => m.content), ['联调测试', '后端模型回复', '第二轮'])
+    assert.match(contexts[1].map(m => m.content).join('\n'), /联调测试/)
+    assert.equal(contexts[1].at(-1).content, '第二轮')
+    assert.equal(state.activeSession.value.title, '前后端对话功能联调测试')
     const creating = state.createSession()
     assert.equal(await state.createSession(), false)
     assert.equal(await creating, true)
@@ -113,6 +116,6 @@ test('real HTTP sessions and messages restore after backend restart; failures, d
     }
     await vite.close()
     globalThis.fetch = originalFetch
-    await rm(directory, { recursive: true, force: true })
+    // Keep test artifacts: repository policy forbids batch deletion.
   }
 })

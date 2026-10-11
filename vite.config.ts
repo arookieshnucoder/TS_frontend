@@ -14,6 +14,8 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
+    // Repository policy forbids batch deletion. Old build artifacts are left for manual cleanup.
+    build: { emptyOutDir: false },
     server: {
       port,
       proxy: {
