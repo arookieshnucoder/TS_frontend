@@ -9,8 +9,7 @@ const {
   sessions,
   activeSession,
   activeId,
-  generatingId,
-  storageError,
+  pendingSessionId,
   apiError,
   isLoading,
   isPending,
@@ -29,7 +28,8 @@ const followLatest = ref(true)
 const copiedId = ref('')
 const copyError = ref('')
 let copyTimer: ReturnType<typeof setTimeout> | undefined
-const isGenerating = computed(() => activeId.value === generatingId.value)
+const statusLabels = { pending: '生成中', finished: '已完成', failure: '请求异常' }
+const isSending = computed(() => activeId.value === pendingSessionId.value)
 const filteredSessions = computed(() =>
   sessions.value.filter((session) =>
     session.title.toLowerCase().includes(query.value.toLowerCase()),
@@ -102,7 +102,7 @@ async function newChat() {
   })
 }
 async function submit(text = draft.value) {
-  if (!text.trim() || isGenerating.value || isPending.value || isLoading.value) return
+  if (!text.trim() || isSending.value || isPending.value || isLoading.value) return
   followLatest.value = true
   if (!(await sendMessage(text))) return
   if (draft.value === text) draft.value = ''
@@ -196,14 +196,14 @@ onBeforeUnmount(() => clearTimeout(copyTimer))
             @click="openSession(session.id)"
           >
             <AppIcon name="chat" /><span>{{ session.title }}</span
-            ><span v-if="session.id === generatingId" class="session-generating"></span>
+            ><span v-if="session.id === pendingSessionId" class="session-pending"></span>
           </button>
         </div>
         <p v-if="!filteredSessions.length" class="search-empty">没有找到相关对话</p>
       </nav>
       <div class="sidebar-bottom">
         <div class="local-note">
-          <AppIcon name="lock" /><span>你的想法，留在这里<small>对话仅保存在此浏览器</small></span>
+          <AppIcon name="lock" /><span>你的想法，留在这里<small>对话保存在后端本地</small></span>
         </div>
         <div class="profile">
           <span class="avatar">我</span>
@@ -301,13 +301,20 @@ onBeforeUnmount(() => clearTimeout(copyTimer))
       </div>
 
       <footer class="composer-area">
+        <p v-if="activeSession" class="notice session-status" :data-status="activeSession.sessionStatus" role="status">
+          {{ statusLabels[activeSession.sessionStatus] }}
+        </p>
+        <p v-if="activeSession?.sessionStatus === 'failure'" class="notice session-failure" role="alert">
+          {{ activeSession.sessionError?.message || '模型接口未正确返回，请稍后重试。' }}
+          <span v-if="activeSession.sessionError">（{{ activeSession.sessionError.code }} / {{ activeSession.sessionError.httpStatusCode }}）</span>
+        </p>
         <p v-if="apiError" class="notice" role="alert">
           {{ apiError }}
-          <button type="button" :disabled="isLoading || isPending" @click="loadSessions">??????</button>
+          <button type="button" :disabled="isLoading || isPending" @click="loadSessions">重新加载</button>
         </p>
-        <p v-if="isPending" class="notice" role="status">???????</p>
-        <p v-if="storageError || copyError" class="notice" role="status">
-          {{ storageError || copyError }}
+        <p v-if="isPending" class="notice" role="status">正在处理，请稍候…</p>
+        <p v-if="copyError" class="notice" role="status">
+          {{ copyError }}
         </p>
         <form class="composer" @submit.prevent="submit()">
           <textarea
@@ -325,7 +332,7 @@ onBeforeUnmount(() => clearTimeout(copyTimer))
             <div class="composer-controls">
               <span class="keyboard-hint">Shift + Enter 换行</span
               ><button
-                v-if="isGenerating"
+                v-if="isSending"
                 type="button"
                 class="send-button stop-button"
                 aria-label="停止生成"
@@ -347,7 +354,7 @@ onBeforeUnmount(() => clearTimeout(copyTimer))
           </div>
         </form>
         <p class="composer-disclaimer">
-          给想法一点空间 <span>·</span> 当前回复为模拟内容，仅供体验
+          给想法一点空间 <span>·</span> AI 生成内容，请核实重要信息
         </p>
       </footer>
     </main>

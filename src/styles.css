@@ -233,7 +233,7 @@ svg {
 .session-item.active > svg {
   color: #4c7250;
 }
-.session-generating {
+.session-pending {
   width: 6px;
   height: 6px;
   border-radius: 50%;
