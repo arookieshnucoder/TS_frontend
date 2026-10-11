@@ -1,0 +1,40 @@
+name: Frontend CI
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: frontend
+          clean: false
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          repository: ${{ vars.BACKEND_REPOSITORY || 'arookieshnucoder/TS_backend' }}
+          ref: ${{ vars.BACKEND_REF || 'master' }}
+          token: ${{ secrets.SOURCE_READ_TOKEN || github.token }}
+          path: backend
+          clean: false
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            backend/package-lock.json
+      - run: npm ci
+        working-directory: backend
+      - run: npm ci
+        working-directory: frontend
+      - run: npm test
+        working-directory: frontend
+      - run: npm run build
+        working-directory: frontend
+      - run: docker build --tag ragagent-frontend:ci frontend
