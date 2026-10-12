@@ -22,22 +22,22 @@ test('real HTTP sessions and messages restore after backend restart; failures, d
     const { loadConfig } = await vite.ssrLoadModule('../backend/src/config/env.ts')
     const { createDependencies } = await vite.ssrLoadModule('../backend/src/bootstrap/container.ts')
     const config = loadConfig({ NODE_ENV: 'test', SESSION_DATA_DIR: directory })
-    const model = { async reply(messages, signal) {
-      if (messages[0]?.content.startsWith("Generate a session title")) return "前后端对话功能联调测试"
+    const model = { async turn(messages, _tools, signal) {
+      if (messages[0]?.content.startsWith("Generate a session title")) return { content: "前后端对话功能联调测试", toolCalls: [] }
       contexts.push(messages)
       if (fail) throw new Error('provider failure')
       if (delay) await new Promise((resolve, reject) => {
         const timer = setTimeout(resolve, 2000)
         signal.addEventListener('abort', () => { clearTimeout(timer); reject(new Error('aborted')) }, { once: true })
       })
-      return '后端模型回复'
+      return { content: '后端模型回复', toolCalls: [] }
     } }
     async function stopBackend() {
       server.closeAllConnections()
       await new Promise(resolve => server.close(resolve))
     }
     async function startBackend() {
-      server = createApp(config, createDependencies({ chatModel: model, logger: { info() {}, error() {} } }, config)).listen(0, '127.0.0.1')
+      server = createApp(config, createDependencies({ agentModel: model, logger: { info() {}, error() {} } }, config)).listen(0, '127.0.0.1')
       await new Promise(resolve => server.once('listening', resolve))
       const origin = `http://127.0.0.1:${server.address().port}`
       globalThis.fetch = (path, options) => originalFetch(new URL(path, origin), options)
