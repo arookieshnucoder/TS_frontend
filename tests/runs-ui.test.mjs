@@ -1,0 +1,56 @@
+import ts from 'typescript'
+import assert from 'node:assert/strict'
+import { test } from 'node:test'
+import { Window } from 'happy-dom'
+import { createServer } from 'vite'
+import { parse, compileScript } from '@vue/compiler-sfc'
+
+test('run timeline ignores stale session results, handles auth, expands safe fields and appends older records', async () => {
+  const window=new Window()
+  for (const name of ['window','document','navigator','HTMLElement','Element','SVGElement','Node','Document','ShadowRoot','Event']) {
+    Object.defineProperty(globalThis,name,{configurable:true,value:name==='window'?window:window[name]})
+  }
+  const {createApp,nextTick,ref,h}=await import('vue')
+  const vite=await createServer({configFile:false,ssr:{external:true},plugins:[{name:'vue-runs-test',async transform(source,id){
+    if(!id.endsWith('.vue')) return
+    const {descriptor}=parse(source,{filename:id}),compiled=compileScript(descriptor,{id,inlineTemplate:true})
+    return {code:ts.transpileModule(compiled.content,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText}
+  }}],server:{middlewareMode:true,hmr:{port:0}},appType:'custom'})
+  const originalFetch=globalThis.fetch
+  let app,releaseOld
+  const id='100000000000000001',oldId='100000000000000000'
+  const summary=(id,question)=>({id,sessionId:'b',requestId:'request',userMessageId:'q',question,status:'failure',startedAt:new Date().toISOString(),eventCount:2,droppedEvents:0,durationMs:100})
+  globalThis.fetch=async(url,options)=>{
+    const path=String(url)
+    if(path.includes('/sessions/a/')) return new Promise(resolve=>{releaseOld=()=>resolve(Response.json({data:{runs:[summary(id,'stale question')]}}))})
+    if(path.includes('/sessions/empty/')) return Response.json({data:{runs:[]}})
+    if(options?.headers?.Authorization!=='Bearer token') return Response.json({error:{message:'请填写管理员令牌。'}},{status:401})
+    if(path.endsWith(`/runs/${id}`)) return Response.json({data:{...summary(id,'new question'),events:[
+      {sequence:1,name:'agent.fallback',elapsedMs:0,timestamp:new Date().toISOString(),fields:{to:'backup'}},
+      {sequence:2,name:'run.failure',elapsedMs:100,timestamp:new Date().toISOString(),fields:{result:'<script>danger()</script>',password:'[REDACTED]'}},
+    ]}})
+    return Response.json({data:{runs:[summary(path.includes('before=')?oldId:id,path.includes('before=')?'older question':'new question')],...(path.includes('before=')?{}:{nextCursor:oldId})}})
+  }
+  async function settle(predicate){for(let i=0;i<150;i++){await new Promise(resolve=>setTimeout(resolve,10));await nextTick();if(predicate())return}assert.fail('UI did not settle')}
+  try{
+    const {default:Timeline}=await vite.ssrLoadModule('/src/components/RunTimeline.vue')
+    const sessionId=ref('a'),root=document.createElement('div');document.body.append(root)
+    app=createApp({setup:()=>()=>h(Timeline,{sessionId:sessionId.value,updatedAt:0,pending:false})});app.mount(root)
+    const timeline=root.querySelector('.run-timeline');timeline.open=true;timeline.dispatchEvent(new window.Event('toggle'))
+    await settle(()=>!!releaseOld)
+    sessionId.value='b';await nextTick();await settle(()=>!!root.querySelector('[role="alert"]'))
+    releaseOld();await nextTick();assert.doesNotMatch(root.textContent,/stale question/)
+    const button=text=>[...root.querySelectorAll('button')].find(b=>b.textContent===text)
+    button('管理认证').click();await nextTick()
+    const token=root.querySelector('input');token.value='token';token.dispatchEvent(new window.Event('input'));await nextTick()
+    button('刷新记录').click();await settle(()=>root.querySelectorAll('.run-entry').length===1)
+    const entry=root.querySelector('.run-entry');entry.open=true;entry.dispatchEvent(new window.Event('toggle'))
+    await settle(()=>!!root.querySelector('.run-events'))
+    assert.match(root.textContent,/切换备用模型 · backup/);assert.match(root.textContent,/本次回答失败/)
+    assert.equal(root.querySelector('script'),null);assert.match(root.querySelector('pre').textContent,/backup/)
+    button('加载更早记录').click();await settle(()=>root.querySelectorAll('.run-entry').length===2)
+    assert.match(root.textContent,/older question/);assert.equal(window.localStorage.length,0)
+    sessionId.value='empty';await nextTick();await settle(()=>root.textContent.includes('还没有运行记录'))
+    assert.equal(root.querySelectorAll('.run-entry').length,0)
+  }finally{app?.unmount();await window.happyDOM.abort();globalThis.fetch=originalFetch;await vite.close()}
+})

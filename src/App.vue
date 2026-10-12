@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import AppIcon from './components/AppIcon.vue'
 import MessageContent from './components/MessageContent.vue'
 import McpHub from './components/McpHub.vue'
+import RunTimeline from './components/RunTimeline.vue'
 import { useChat } from './composables/useChat'
 import './styles.css'
 
@@ -301,6 +302,7 @@ onBeforeUnmount(() => clearTimeout(copyTimer))
             >
           </article>
         </section>
+        <RunTimeline v-if="activeSession" :session-id="activeSession.id" :updated-at="activeSession.updatedAt" :pending="activeSession.sessionStatus === 'pending'" />
       </div>
 
       <footer class="composer-area">

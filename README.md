@@ -43,3 +43,5 @@ Docker 镜像由 `Dockerfile` 分阶段构建，通过 Nginx 在 8080 端口提�
 侧边栏的 MCP Hub 默认收起，支持表单、JSON 和文件导入、启用开关、连接测试与工具目录。允许修改数据需要单独勾选；远程管理令牌只保存在页面内存中。操作异常会显示错误，开关在后端保存成功后更新。
 
 后端接入及自建 MCP 教程位于同工作区的 `backend/docs/MCP_GUIDE.md`。连接方式支持 stdio、Streamable HTTP 和旧 SSE。stdio 程序在后端主机执行，用户浏览器无需安装工具程序。
+
+会话下方的“执行流程”提供每个问题的折叠时间线、模型/工具/重试/回退事件和 JSON 导出。成功、失败、取消与超时都可以查看；处理中的问题仅在展开面板时刷新。运行记录管理认证与 MCP Hub 共用管理员令牌。后端说明：`backend/docs/AGENT_OBSERVABILITY.md`。
