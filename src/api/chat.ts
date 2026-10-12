@@ -15,7 +15,7 @@ export class ChatApiError extends Error {
   }
 }
 const baseUrl = (import.meta.env.VITE_API_BASE_URL ?? '/api').replace(/\/$/, '')
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
+export async function request<T>(path: string, options?: RequestInit): Promise<T> {
   let response: Response
   try {
     response = await fetch(`${baseUrl}${path}`, {

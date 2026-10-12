@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import AppIcon from './components/AppIcon.vue'
 import MessageContent from './components/MessageContent.vue'
+import McpHub from './components/McpHub.vue'
 import { useChat } from './composables/useChat'
 import './styles.css'
 
@@ -202,6 +203,7 @@ onBeforeUnmount(() => clearTimeout(copyTimer))
         </div>
         <p v-if="!filteredSessions.length" class="search-empty">没有找到相关对话</p>
       </nav>
+      <McpHub />
       <div class="sidebar-bottom">
         <div class="local-note">
           <AppIcon name="lock" /><span>你的想法，留在这里<small>对话保存在后端本地</small></span>
