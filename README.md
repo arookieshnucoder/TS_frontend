@@ -33,6 +33,8 @@ npm run build
 
 包含真实后端 HTTP 联调、REST 200/400 客户端测试和页面组件交互测试。build 同时执行类型检查。
 
+联调测试要求同级 `../backend` 已安装依赖，并支持 `agentModel` 注入和 `AgentHarness`。测试注入模拟模型，不需要 `LLM_API_KEY`。前端 CI 默认固定使用兼容的后端提交 `2635abec3f1c43e7ba2b9806b6ee6aec327e1502`，避免前后端独立推送时，浮动分支暂时处于不兼容状态。升级联调后端时同步更新 `.github/workflows/ci.yml` 中的提交；如通过仓库变量 `BACKEND_REF` 覆盖，请同样指定兼容的提交 SHA。`BACKEND_REPOSITORY` 可覆盖后端仓库。CI 会打印实际测试的前后端提交，便于定位版本错配。
+
 会话标题由后端模型在前五个成功轮次内生成或微调，随后冻结；前端创建会话时只发送临时标题“新对话”。模型侧记忆摘要和工具调用不会替换用户看到的历史。构建设置 `emptyOutDir: false`，旧构建产物按仓库规则保留供人工清理。
 
 Docker 镜像由 `Dockerfile` 分阶段构建，通过 Nginx 在 8080 端口提供页面并将 `/api/` 转发到 Compose 中的 backend。完整部署入口位于同级 backend 仓库：在项目根目录执行 `./backend/scripts/deploy.ps1`。各仓库 CI 自动测试和构建，成对镜像发布与 Windows 自动部署使用 backend 的 **Release full stack** 工作流，详见 `../backend/docs/deployment.md`。

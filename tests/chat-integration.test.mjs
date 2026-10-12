@@ -38,7 +38,10 @@ test('real HTTP sessions and messages restore after backend restart; failures, d
       await new Promise(resolve => server.close(resolve))
     }
     async function startBackend() {
-      server = createApp(config, createDependencies({ agentModel: model, logger: { info() {}, error() {} } }, config)).listen(0, '127.0.0.1')
+      const dependencies = createDependencies({ agentModel: model, logger: { info() {}, error() {} } }, config)
+      assert.equal(typeof dependencies.agentHarness?.run, 'function',
+        'Incompatible backend: this test requires agentModel injection and AgentHarness. Check the backend checkout and CI BACKEND_REF (see README.md).')
+      server = createApp(config, dependencies).listen(0, '127.0.0.1')
       await new Promise(resolve => server.once('listening', resolve))
       const origin = `http://127.0.0.1:${server.address().port}`
       globalThis.fetch = (path, options) => originalFetch(new URL(path, origin), options)
@@ -58,7 +61,7 @@ test('real HTTP sessions and messages restore after backend restart; failures, d
     assert.equal(state.sessions.value.length, 0)
     const statuses = []
     const unwatch = watch(() => state.activeSession.value?.sessionStatus, status => statuses.push(status), { flush: 'sync' })
-    assert.equal(await state.sendMessage('联调测试'), true)
+    assert.equal(await state.sendMessage('联调测试'), true, state.apiError.value)
     unwatch()
     assert.ok(statuses.includes('pending'))
     assert.equal(statuses.at(-1), 'finished')
@@ -69,7 +72,7 @@ test('real HTTP sessions and messages restore after backend restart; failures, d
     state = await mount()
     assert.equal(state.activeId.value, id)
     assert.equal(state.activeSession.value.messages.length, 2, 'history restored without localStorage')
-    assert.equal(await state.sendMessage('第二轮'), true)
+    assert.equal(await state.sendMessage('第二轮'), true, state.apiError.value)
     assert.match(contexts[1].map(m => m.content).join('\n'), /联调测试/)
     assert.equal(contexts[1].at(-1).content, '第二轮')
     assert.equal(state.activeSession.value.title, '前后端对话功能联调测试')
