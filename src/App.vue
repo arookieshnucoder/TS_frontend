@@ -292,7 +292,6 @@ onBeforeUnmount(() => clearTimeout(copyTimer))
                     @click="copyMessage(message.id, message.content)"
                   >
                     <AppIcon :name="copiedId === message.id ? 'check' : 'copy'" /></button
-                  ><span v-if="message.status === 'stopped'">已停止生成</span
                   ><span v-if="copiedId === message.id">已复制</span>
                 </div>
               </div>

@@ -4,7 +4,7 @@ export interface Message {
   id: string
   role: 'user' | 'assistant'
   content: string
-  status?: 'streaming' | 'complete' | 'stopped'
+  status?: 'streaming' | 'complete'
 }
 
 export interface ChatSession {
