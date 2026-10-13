@@ -57,26 +57,26 @@ const groups = computed(() =>
 const suggestions = [
   {
     icon: 'code',
-    title: '一起学点新东西',
-    text: '用简单的例子讲讲 TypeScript 泛型',
+    title: '一元二次方程',
+    text: '解方程 x² - 5x + 6 = 0，并检验答案',
     color: 'green',
   },
   {
     icon: 'sparkles',
-    title: '给灵感一点空间',
-    text: '帮我写一个有趣的短篇故事开头',
+    title: '二次函数',
+    text: '求 y = x² - 4x + 1 的顶点坐标与对称轴',
     color: 'purple',
   },
   {
     icon: 'coffee',
-    title: '让日常有点不同',
-    text: '帮我安排一个轻松的周末',
+    title: '概率与统计',
+    text: '袋中有2个红球和1个白球，不放回摸2次，两次都是红球的概率是多少？',
     color: 'orange',
   },
   {
     icon: 'chat',
-    title: '随便聊聊也很好',
-    text: '分享一个让我意想不到的冷知识',
+    title: '几何与分类讨论',
+    text: '直角三角形两边长分别是3和4，求第三边的所有可能值',
     color: 'blue',
   },
 ]
@@ -211,7 +211,7 @@ onBeforeUnmount(() => clearTimeout(copyTimer))
         </div>
         <div class="profile">
           <span class="avatar">我</span>
-          <div><strong>我的小天地</strong><span>保持好奇，随心畅聊</span></div>
+          <div><strong>初中数学搜题</strong><span>看懂思路，掌握解法</span></div>
           <span class="profile-dot"></span>
         </div>
       </div>
@@ -240,10 +240,10 @@ onBeforeUnmount(() => clearTimeout(copyTimer))
       >
         <section v-if="!activeSession?.messages.length" class="welcome">
           <div class="welcome-symbol"><AppIcon name="sparkles" /></div>
-          <div class="welcome-eyebrow">A LITTLE SPACE FOR BIG IDEAS</div>
-          <h1>今天，想聊点什么？</h1>
+          <div class="welcome-eyebrow">初中数学 · 搜题与讲解</div>
+          <h1>把数学题交给我</h1>
           <p class="welcome-description">
-            一个问题、一点灵感，或是天马行空的想法。<br />我在这里，陪你慢慢探索。
+            输入完整题干、公式和选项。<br />一起看懂思路，完成计算，检查答案。
           </p>
           <div class="suggestion-grid">
             <button
@@ -260,7 +260,7 @@ onBeforeUnmount(() => clearTimeout(copyTimer))
               ><AppIcon class="suggestion-arrow" name="arrow-up-right" />
             </button>
           </div>
-          <p class="welcome-footnote"><span></span> 不必有标准答案，从一句你好开始。</p>
+          <p class="welcome-footnote"><span></span> 当前支持文字搜题，请补全题目条件。</p>
         </section>
         <section v-else class="messages" aria-label="聊天记录">
           <div class="conversation-intro">
@@ -325,14 +325,14 @@ onBeforeUnmount(() => clearTimeout(copyTimer))
             ref="input"
             v-model="draft"
             aria-label="输入消息"
-            placeholder="发消息给松间，聊聊你的想法…"
+            placeholder="输入完整数学题，包含条件、公式和选项…"
             rows="1"
             maxlength="12000"
             @input="resizeInput"
             @keydown="handleKeydown"
           ></textarea>
           <div class="composer-toolbar">
-            <span class="composer-mode"><AppIcon name="sparkles" /> 随心聊聊</span>
+            <span class="composer-mode"><AppIcon name="sparkles" /> 初中数学 · 文字搜题</span>
             <div class="composer-controls">
               <span class="keyboard-hint">Shift + Enter 换行</span
               ><button

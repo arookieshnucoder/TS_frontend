@@ -3,12 +3,14 @@ import { test } from 'node:test'
 import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { createServer } from 'vite'
+import { createTestServer } from './helpers/vite.mjs'
+import { checkBackend } from './helpers/backend.mjs'
 import { createRenderer, watch } from 'vue'
 
 test('real HTTP sessions and messages restore after backend restart; failures, duplicate sends and cancellation', async () => {
+  await checkBackend()
   const directory = await mkdtemp(join(tmpdir(), 'chat-frontend-'))
-  const vite = await createServer({ configFile: false, ssr: { external: true }, server: { middlewareMode: true, hmr: { port: 0 } }, appType: 'custom' })
+  const vite = await createTestServer()
   const originalFetch = globalThis.fetch
   const renderer = createRenderer({
     createElement: () => ({}), createText: () => ({}), createComment: () => ({}),

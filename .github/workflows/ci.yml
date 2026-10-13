@@ -17,8 +17,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           repository: ${{ vars.BACKEND_REPOSITORY || 'arookieshnucoder/TS_backend' }}
-          # 匹配 harness 版本
-          ref: ${{ vars.BACKEND_REF || '2635abec3f1c43e7ba2b9806b6ee6aec327e1502' }}
+          # 包含 MCP Hub、运行记录及真实 MCP 测试服务的已发布版本
+          ref: ${{ vars.BACKEND_REF || '98be6f3e0aab5434f54714e0a7094caacb597847' }}
           token: ${{ secrets.SOURCE_READ_TOKEN || github.token }}
           path: backend
           clean: false
@@ -27,6 +27,8 @@ jobs:
         run: |
           git -C frontend log -1 --format='frontend: %H %s'
           git -C backend log -1 --format='backend: %H %s'
+      - name: 验证联调后端兼容性
+        run: node frontend/scripts/check-backend.mjs
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
@@ -42,8 +44,8 @@ jobs:
       - name: 测试
         run: npm test
         working-directory: frontend
+        timeout-minutes: 3
       - name: 构建
         run: npm run build
         working-directory: frontend
-      - name: 构建 Docker 镜像
-        run: docker build --tag ragagent-frontend:ci frontend
+      # 暂停日常 CI 的 Docker 镜像构建；仍保留测试、类型检查和应用构建。

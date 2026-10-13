@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { mathSegments } from '../utils/math-content'
+import 'katex/dist/katex.min.css'
 const props = defineProps<{ content: string }>()
-// Model output is rendered as text, never injected as HTML.
+// Model prose is text; only bounded, untrusted-mode KaTeX output is rendered as formula markup.
 const blocks = computed(() =>
   props.content.split(/```/).map((part, index) => {
-    if (index % 2 === 0) return { type: 'text', content: part, language: '' }
+    if (index % 2 === 0) return { type: 'text', content: part, language: '', segments: mathSegments(part.trim()) }
     const newline = part.indexOf('\n')
     return {
       type: 'code',
       language: newline < 0 ? '' : part.slice(0, newline),
       content: newline < 0 ? part : part.slice(newline + 1).replace(/\n$/, ''),
+      segments: [],
     }
   }),
 )
@@ -23,8 +26,13 @@ const blocks = computed(() =>
         <pre><code>{{ block.content }}</code></pre>
       </div>
       <p v-else-if="block.content.trim()" class="message-paragraph">
-        {{ block.content.trim() }}
+        <template v-for="(segment, segmentIndex) in block.segments" :key="segmentIndex"><span v-if="segment.type === 'text'">{{ segment.text }}</span><span v-else :class="{ 'math-display': segment.display }" v-html="segment.html" /></template>
       </p></template
     >
   </div>
 </template>
+
+<style scoped>
+.math-display { display: block; max-width: 100%; overflow-x: auto; }
+.message-paragraph :deep(.katex) { font-size: 1.08em; }
+</style>

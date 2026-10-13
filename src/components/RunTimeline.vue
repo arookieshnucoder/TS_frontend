@@ -84,6 +84,7 @@ function label(event: RunEvent): string {
     'agent.started': '启动 Agent', 'agent.context': '构建上下文', 'context.compressed': '压缩历史上下文',
     'agent.tools.selected': '按上下文预算选择 MCP 工具',
     'agent.completed': 'Agent 执行完成', 'agent.failed': 'Agent 执行失败', 'answer.ready': '回答就绪',
+    'math.ingested': '规范化题目并保存向量', 'math.retrieval': '检索相似题与解法', 'math.native_verified': '程序数学核验完成',
     'title.started': '处理会话标题', 'title.completed': '标题处理完成', 'title.failed': '标题未更新，回答已保存', 'session.saved': '保存会话结果', 'session.failed': '记录请求失败',
     'run.success': '本次回答已完成', 'run.failure': '本次回答失败', 'run.cancelled': '用户已取消', 'run.timed_out': '总时间预算已耗尽', 'run.interrupted': '后端重启，运行中断',
   }

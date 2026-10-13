@@ -1,21 +1,16 @@
-import ts from 'typescript'
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { Window } from 'happy-dom'
-import { createServer } from 'vite'
-import { parse, compileScript } from '@vue/compiler-sfc'
+import { createTestServer } from './helpers/vite.mjs'
 
 test('run timeline ignores stale session results, handles auth, expands safe fields and appends older records', async () => {
   const window=new Window()
+  window.document.write('<!doctype html><html><body></body></html>')
   for (const name of ['window','document','navigator','HTMLElement','Element','SVGElement','Node','Document','ShadowRoot','Event']) {
     Object.defineProperty(globalThis,name,{configurable:true,value:name==='window'?window:window[name]})
   }
   const {createApp,nextTick,ref,h}=await import('vue')
-  const vite=await createServer({configFile:false,ssr:{external:true},plugins:[{name:'vue-runs-test',async transform(source,id){
-    if(!id.endsWith('.vue')) return
-    const {descriptor}=parse(source,{filename:id}),compiled=compileScript(descriptor,{id,inlineTemplate:true})
-    return {code:ts.transpileModule(compiled.content,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText}
-  }}],server:{middlewareMode:true,hmr:{port:0}},appType:'custom'})
+  const vite=await createTestServer({vue:true})
   const originalFetch=globalThis.fetch
   let app,releaseOld
   const id='100000000000000001',oldId='100000000000000000'

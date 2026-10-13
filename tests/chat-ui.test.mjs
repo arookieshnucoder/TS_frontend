@@ -1,25 +1,16 @@
-import ts from 'typescript'
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { Window } from 'happy-dom'
-import { createServer } from 'vite'
-import { parse, compileScript } from '@vue/compiler-sfc'
+import { createTestServer } from './helpers/vite.mjs'
 
 test('sidebar renders server history, searches and selects; form sends and renders replies and errors', async () => {
   const window = new Window()
+  window.document.write('<!doctype html><html><body></body></html>')
   for (const name of ['window','document','navigator','HTMLElement','Element','SVGElement','Node','Document','ShadowRoot','Event']) {
     Object.defineProperty(globalThis, name, { configurable: true, value: name === 'window' ? window : window[name] })
   }
   const { createApp, nextTick } = await import('vue')
-  const vite = await createServer({ configFile: false, ssr: { external: true }, plugins: [{
-    name: 'vue-dom-test',
-    async transform(source, id) {
-      if (!id.endsWith('.vue')) return
-      const { descriptor } = parse(source, { filename: id })
-      const compiled = compileScript(descriptor, { id, inlineTemplate: true })
-      return { code: ts.transpileModule(compiled.content, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText }
-    },
-  }], server: { middlewareMode: true, hmr: { port: 0 } }, appType: 'custom' })
+  const vite = await createTestServer({ vue: true })
   const originalFetch = globalThis.fetch
   let fail = false
   const reply = '这是一段逐字显示的模型回答，包含组合表情 👨‍👩‍👧‍👦 和代码。'.repeat(5)

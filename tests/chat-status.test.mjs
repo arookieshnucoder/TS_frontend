@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { createServer } from 'vite'
+import { createTestServer } from './helpers/vite.mjs'
 
 test('REST client uses HTTP 200/400 and carries the failed session without stream parsing',async()=>{
-  const vite=await createServer({configFile:false,ssr:{external:true},server:{middlewareMode:true,hmr:{port:0}},appType:'custom'})
+  const vite=await createTestServer()
   const original=globalThis.fetch
   const session={id:'1',title:'test',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),
     messages:[{id:'2',role:'assistant',content:'中文返回内容'}],sessionStatus:'finished',sessionError:null,modelRequestId:'3'}
