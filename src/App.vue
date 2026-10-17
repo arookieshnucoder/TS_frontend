@@ -1,12 +1,22 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import AppIcon from './components/AppIcon.vue'
 import MessageContent from './components/MessageContent.vue'
 import McpHub from './components/McpHub.vue'
 import RunTimeline from './components/RunTimeline.vue'
-import { useChat } from './composables/useChat'
+import SubjectSwitch from './components/SubjectSwitch.vue'
+import SubjectAtmosphere from './components/SubjectAtmosphere.vue'
+import InteractionEffects from './components/InteractionEffects.vue'
+import { subjects, type Subject } from './config/subjects'
+import { useAgentChat } from './composables/useAgentChat'
 import './styles.css'
 
+function savedSubject(): Subject {
+  try { return localStorage.getItem('songjian-subject') === 'math' ? 'math' : 'chinese' }
+  catch { return 'chinese' }
+}
+const subject = ref<Subject>(savedSubject())
+const activeSubject = computed(() => subjects[subject.value])
 const {
   sessions,
   activeSession,
@@ -21,11 +31,17 @@ const {
   selectSession,
   sendMessage,
   stopGeneration,
-} = useChat()
+  isDemo,
+  storageNotice,
+} = useAgentChat(subject)
 const sidebarOpen = ref(window.innerWidth > 760)
 const query = ref('')
 const draft = ref('')
+const drafts: Record<Subject, string> = { chinese: '', math: '' }
 const input = ref<HTMLTextAreaElement>()
+const sidebar = ref<HTMLElement>()
+const sidebarToggle = ref<HTMLButtonElement>()
+const sidebarCollapse = ref<HTMLButtonElement>()
 const messageList = ref<HTMLElement>()
 const followLatest = ref(true)
 const copiedId = ref('')
@@ -54,32 +70,18 @@ const groups = computed(() =>
     },
   ].filter((group) => group.sessions.length),
 )
-const suggestions = [
-  {
-    icon: 'code',
-    title: '一元二次方程',
-    text: '解方程 x² - 5x + 6 = 0，并检验答案',
-    color: 'green',
-  },
-  {
-    icon: 'sparkles',
-    title: '二次函数',
-    text: '求 y = x² - 4x + 1 的顶点坐标与对称轴',
-    color: 'purple',
-  },
-  {
-    icon: 'coffee',
-    title: '概率与统计',
-    text: '袋中有2个红球和1个白球，不放回摸2次，两次都是红球的概率是多少？',
-    color: 'orange',
-  },
-  {
-    icon: 'chat',
-    title: '几何与分类讨论',
-    text: '直角三角形两边长分别是3和4，求第三边的所有可能值',
-    color: 'blue',
-  },
-]
+function changeSubject(next: Subject) {
+  if (next === subject.value || isPending.value || isLoading.value) return
+  drafts[subject.value] = draft.value
+  subject.value = next
+  draft.value = drafts[next]
+  query.value = ''
+  copiedId.value = ''; copyError.value = ''
+  followLatest.value = true
+  try { localStorage.setItem('songjian-subject', next) } catch { /* Storage can be unavailable in private browsing. */ }
+  if (window.innerWidth <= 760) sidebarOpen.value = false
+  nextTick(resizeInput)
+}
 
 function resizeInput() {
   if (!input.value) return
@@ -137,44 +139,73 @@ function updateScrollPosition() {
   const list = messageList.value
   if (list) followLatest.value = list.scrollHeight - list.scrollTop - list.clientHeight < 80
 }
+function closeSidebar() {
+  sidebarOpen.value = false
+  nextTick(() => sidebarToggle.value?.focus())
+}
+function openSidebar() {
+  sidebarOpen.value = true
+  if (window.innerWidth <= 760) nextTick(() => sidebarCollapse.value?.focus())
+}
+function handleEscape(event: KeyboardEvent) {
+  if (!sidebarOpen.value || window.innerWidth > 760) return
+  if (event.key === 'Escape') { closeSidebar(); return }
+  if (event.key === 'Tab') {
+    const controls = sidebar.value?.querySelectorAll<HTMLElement>('a[href], button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), summary')
+    const visible = [...(controls ?? [])].filter(element => element.getClientRects().length > 0)
+    const first = visible[0]
+    const last = visible[visible.length - 1]
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
+  }
+}
+onMounted(() => window.addEventListener('keydown', handleEscape))
 watch(
   () => [activeId.value, activeSession.value?.messages.map((message) => message.content).join('')],
   async () => {
     await nextTick()
     const list = messageList.value
-    if (list && followLatest.value) list.scrollTop = list.scrollHeight
+    if (list && followLatest.value) {
+      list.scrollTop = activeSession.value?.messages.length ? list.scrollHeight : 0
+    }
   },
   { flush: 'post', immediate: true },
 )
-onBeforeUnmount(() => clearTimeout(copyTimer))
+onBeforeUnmount(() => {
+  clearTimeout(copyTimer)
+  window.removeEventListener('keydown', handleEscape)
+})
 </script>
 
 <template>
-  <div class="chat-app" :class="{ 'sidebar-hidden': !sidebarOpen }">
+  <div class="chat-app" :data-subject="subject" :class="{ 'sidebar-hidden': !sidebarOpen }">
+    <InteractionEffects />
     <button
       v-if="sidebarOpen"
       class="sidebar-backdrop"
       aria-label="关闭侧边栏"
-      @click="sidebarOpen = false"
+      @click="closeSidebar"
     ></button>
-    <aside class="sidebar" :class="{ 'is-open': sidebarOpen }" aria-label="聊天会话">
+    <aside ref="sidebar" class="sidebar" :class="{ 'is-open': sidebarOpen }" :inert="!sidebarOpen" :aria-hidden="!sidebarOpen" aria-label="聊天会话">
       <div class="sidebar-brand">
         <a class="brand" href="#" aria-label="回到新对话" @click.prevent="newChat"
-          ><span class="brand-mark"><AppIcon name="sparkles" /></span> 松间<span class="brand-en"
-            >CHAT</span
+          ><span class="brand-mark"><AppIcon name="leaf" /></span> 松间<span class="brand-en"
+            >SONGJIAN</span
           ></a
         >
         <button
           class="icon-button collapse-button"
+          ref="sidebarCollapse"
           aria-label="收起侧边栏"
           title="收起侧边栏"
-          @click="sidebarOpen = false"
+          @click="closeSidebar"
         >
           <AppIcon name="panel" />
         </button>
       </div>
+      <div class="sidebar-subject"><span>{{ activeSubject.english }}</span><strong>{{ activeSubject.discipline }}</strong><p>{{ activeSubject.sideNote }}</p></div>
       <button class="new-chat-button" :disabled="isLoading || isPending" @click="newChat">
-        <AppIcon name="plus" /> 开启新对话
+        <AppIcon name="plus" /> 开启一段新探索
         <AppIcon name="compose" class="new-chat-end" />
       </button>
       <div class="search-box">
@@ -202,35 +233,40 @@ onBeforeUnmount(() => clearTimeout(copyTimer))
             ><span v-if="session.id === pendingSessionId" class="session-pending"></span>
           </button>
         </div>
-        <p v-if="!filteredSessions.length" class="search-empty">没有找到相关对话</p>
+        <div v-if="!filteredSessions.length" class="search-empty"><AppIcon :name="query ? 'search' : activeSubject.icon" /><p>{{ query ? '没有找到相关对话' : activeSubject.emptyNote }}</p></div>
       </nav>
-      <McpHub />
+      <McpHub v-if="!isDemo" />
+      <details v-else class="demo-tools"><summary><AppIcon name="code" /><span>探索工具</span><span class="demo-tools-label">本地演示</span><AppIcon name="chevron" /></summary><div><p>这里先专注体验学科对话与解题思路。</p><p>演示回答由本地示例生成，未连接模型与工具服务。</p></div></details>
       <div class="sidebar-bottom">
         <div class="local-note">
-          <AppIcon name="lock" /><span>你的想法，留在这里<small>对话保存在后端本地</small></span>
+          <AppIcon name="lock" /><span>给思考一点自己的空间<small>{{ isDemo ? '演示对话仅保存在当前浏览器' : '对话保存在后端本地' }}</small></span>
         </div>
         <div class="profile">
-          <span class="avatar">我</span>
-          <div><strong>初中数学搜题</strong><span>看懂思路，掌握解法</span></div>
+          <span class="avatar">学</span>
+          <div><strong>保持好奇，慢慢生长</strong><span>你的专属学习空间</span></div>
           <span class="profile-dot"></span>
         </div>
       </div>
     </aside>
 
     <main class="main-panel">
+      <SubjectAtmosphere :subject="subject" />
       <header class="topbar">
         <div class="topbar-left">
           <button
             v-if="!sidebarOpen"
+            ref="sidebarToggle"
             class="icon-button"
             aria-label="展开侧边栏"
-            @click="sidebarOpen = true"
+            :aria-expanded="sidebarOpen"
+            @click="openSidebar"
           >
             <AppIcon name="panel" /></button
-          ><span class="assistant-name">松间 <span>你的灵感搭子</span></span>
+          ><span class="assistant-name">{{ activeSubject.name }} <span>{{ activeSubject.discipline }}</span></span>
         </div>
-        <span class="demo-badge"><span></span> 演示模式</span>
+        <div class="topbar-right"><span v-if="isDemo" class="demo-badge"><span></span> 演示空间</span><SubjectSwitch :model-value="subject" :disabled="isPending || isLoading" @update:model-value="changeSubject" /></div>
       </header>
+      <span class="sr-only" role="status" aria-live="polite">当前为{{ activeSubject.discipline }}</span>
 
       <div
         ref="messageList"
@@ -238,29 +274,31 @@ onBeforeUnmount(() => clearTimeout(copyTimer))
         :class="{ 'is-empty': !activeSession?.messages.length }"
         @scroll="updateScrollPosition"
       >
-        <section v-if="!activeSession?.messages.length" class="welcome">
-          <div class="welcome-symbol"><AppIcon name="sparkles" /></div>
-          <div class="welcome-eyebrow">初中数学 · 搜题与讲解</div>
-          <h1>把数学题交给我</h1>
+        <section v-if="!activeSession?.messages.length" :key="subject" class="welcome">
+          <div class="welcome-eyebrow"><span></span>{{ activeSubject.discipline }}<span></span></div>
+          <div class="welcome-symbol"><AppIcon :name="activeSubject.icon" /><span class="symbol-orbit"></span><i></i></div>
+          <p class="welcome-overline">{{ activeSubject.eyebrow }}</p>
+          <h1>{{ activeSubject.title }}<em>{{ activeSubject.titleAccent }}</em></h1>
           <p class="welcome-description">
-            输入完整题干、公式和选项。<br />一起看懂思路，完成计算，检查答案。
+            {{ activeSubject.description }}<br />{{ activeSubject.subdescription }}
           </p>
+          <div class="suggestion-heading"><span>从这里，开始探索</span><span>{{ subject === 'chinese' ? '拾字成光' : '循理而行' }} <AppIcon name="arrow-up-right" /></span></div>
           <div class="suggestion-grid">
             <button
-              v-for="suggestion in suggestions"
+              v-for="(suggestion, index) in activeSubject.suggestions"
               :key="suggestion.title"
               class="suggestion-card"
+              :disabled="isLoading || isPending"
               @click="submit(suggestion.text)"
             >
-              <span class="suggestion-icon" :class="suggestion.color"
+              <span class="suggestion-icon"
                 ><AppIcon :name="suggestion.icon"
               /></span>
-              <strong>{{ suggestion.title }}</strong
-              ><span class="suggestion-text">{{ suggestion.text }}</span
-              ><AppIcon class="suggestion-arrow" name="arrow-up-right" />
+              <span class="suggestion-copy"><strong>{{ suggestion.title }}</strong><span class="suggestion-text">{{ suggestion.subtitle }}</span></span>
+              <span class="suggestion-index">0{{ index + 1 }}</span><AppIcon class="suggestion-arrow" name="arrow-up-right" />
             </button>
           </div>
-          <p class="welcome-footnote"><span></span> 当前支持文字搜题，请补全题目条件。</p>
+          <p class="welcome-footnote"><span></span> {{ activeSubject.motto }} <span></span></p>
         </section>
         <section v-else class="messages" aria-label="聊天记录">
           <div class="conversation-intro">
@@ -273,9 +311,9 @@ onBeforeUnmount(() => clearTimeout(copyTimer))
             :class="message.role"
           >
             <template v-if="message.role === 'assistant'">
-              <span class="assistant-avatar"><AppIcon name="sparkles" /></span>
+              <span class="assistant-avatar"><AppIcon :name="activeSubject.icon" /></span>
               <div class="assistant-body">
-                <div class="message-author">松间 <span>与你一起探索</span></div>
+                <div class="message-author">{{ activeSubject.name }} <span>{{ activeSubject.discipline }}</span></div>
                 <MessageContent v-if="message.content" :content="message.content" />
                 <span v-else class="typing-indicator" role="status" aria-label="正在思考"
                   ><i></i><i></i><i></i
@@ -301,10 +339,11 @@ onBeforeUnmount(() => clearTimeout(copyTimer))
             >
           </article>
         </section>
-        <RunTimeline v-if="activeSession" :session-id="activeSession.id" :updated-at="activeSession.updatedAt" :pending="activeSession.sessionStatus === 'pending'" />
+        <RunTimeline v-if="activeSession && !isDemo" :session-id="activeSession.id" :updated-at="activeSession.updatedAt" :pending="activeSession.sessionStatus === 'pending'" />
       </div>
 
       <footer class="composer-area">
+        <p v-if="storageNotice" class="notice" role="status">{{ storageNotice }}</p>
         <p v-if="activeSession" class="notice session-status" :data-status="activeSession.sessionStatus" role="status">
           {{ isTyping ? '正在显示回复' : statusLabels[activeSession.sessionStatus] }}
         </p>
@@ -325,14 +364,14 @@ onBeforeUnmount(() => clearTimeout(copyTimer))
             ref="input"
             v-model="draft"
             aria-label="输入消息"
-            placeholder="输入完整数学题，包含条件、公式和选项…"
+            :placeholder="activeSubject.placeholder"
             rows="1"
             maxlength="12000"
             @input="resizeInput"
             @keydown="handleKeydown"
           ></textarea>
           <div class="composer-toolbar">
-            <span class="composer-mode"><AppIcon name="sparkles" /> 初中数学 · 文字搜题</span>
+            <span class="composer-mode"><AppIcon :name="activeSubject.icon" /> {{ activeSubject.mode }}</span>
             <div class="composer-controls">
               <span class="keyboard-hint">Shift + Enter 换行</span
               ><button
@@ -358,7 +397,7 @@ onBeforeUnmount(() => clearTimeout(copyTimer))
           </div>
         </form>
         <p class="composer-disclaimer">
-          给想法一点空间 <span>·</span> AI 生成内容，请核实重要信息
+          {{ isDemo ? '本地演示 · 回答为预设示例' : 'AI 生成内容，请核实重要信息' }} <span>·</span> {{ activeSubject.motto }}
         </p>
       </footer>
     </main>

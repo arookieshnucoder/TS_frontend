@@ -1,9 +1,10 @@
 import { createServer } from 'vite'
 
-export function createTestServer({ vue = false } = {}) {
+export function createTestServer({ vue = false, chatMode = 'backend' } = {}) {
   let compiler
   return createServer({
     configFile: false,
+    define: { 'import.meta.env.VITE_CHAT_MODE': JSON.stringify(chatMode) },
     ssr: { external: true },
     // These tests load modules through SSR; there is no browser dependency bundle or HMR client.
     optimizeDeps: { noDiscovery: true, include: [] },

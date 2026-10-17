@@ -2,7 +2,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import type { ChatSession, Message } from '../types/chat'
 import { chatApi, ChatApiError, type SessionDto } from '../api/chat'
 
-export function useChat() {
+export function useChat(api: typeof chatApi = chatApi) {
   const sessions = ref<ChatSession[]>([])
   const activeId = ref('')
   const apiError = ref('')
@@ -74,7 +74,7 @@ export function useChat() {
     isLoading.value = true
     apiError.value = ''
     try {
-      const data = await chatApi.list()
+      const data = await api.list()
       if (disposed) return
       sessions.value = data.map(toSession).sort((a, b) => b.updatedAt - a.updatedAt)
       if (!sessions.value.some(session => session.id === activeId.value)) activeId.value = sessions.value[0]?.id ?? ''
@@ -87,7 +87,7 @@ export function useChat() {
     isPending.value = true
     apiError.value = ''
     try {
-      const dto = await chatApi.getById(id)
+      const dto = await api.getById(id)
       if (disposed) return false
       replaceSession(dto)
       activeId.value = id
@@ -96,7 +96,7 @@ export function useChat() {
     finally { isPending.value = false }
   }
   async function addSession(title: string) {
-    const dto = await chatApi.create(title)
+    const dto = await api.create(title)
     if (!disposed) { replaceSession(dto); activeId.value = dto.id }
     return dto.id
   }
@@ -128,7 +128,7 @@ export function useChat() {
       session.messages.push({ id: crypto.randomUUID(), role: 'user', content },
         { id: crypto.randomUUID(), role: 'assistant', content: '', status: 'streaming' })
       pendingSessionId.value = id
-      const dto = await chatApi.send(id, content, controller.signal)
+      const dto = await api.send(id, content, controller.signal)
       if (disposed || controller.signal.aborted) return false
       replaceSession(dto)
       const reply = sessions.value.find(item => item.id === id)?.messages.at(-1)

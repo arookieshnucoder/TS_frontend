@@ -27,7 +27,8 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       vue(),
-      vueDevTools(),
+      // Keep the preview clear; opt in when actively inspecting Vue components.
+      ...(env.VITE_DEVTOOLS === 'true' ? [vueDevTools()] : []),
     ],
     resolve: {
       alias: {

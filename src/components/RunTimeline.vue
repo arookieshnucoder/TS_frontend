@@ -70,7 +70,10 @@ function label(event: RunEvent): string {
   const f = event.fields
   const source = f.source as { serverId?: string; toolName?: string } | undefined
   const tool = source?.toolName ? `${source.serverId} / ${source.toolName}` : String(f.tool ?? '')
-  if (event.name === 'agent.phase') return f.phase === 'observe' ? '汇总工具结果' : f.phase === 'answer' ? '生成最终回答' : `第 ${Number(f.step) + 1} 轮决策`
+  if (event.name === 'agent.phase') {
+    const phases: Record<string, string> = { observe: '汇总工具结果', answer: '生成最终回答', math_retrieve: '检索解题方法', math_solve_verify: '求解并核验', math_independent_review: '复核长难题' }
+    return phases[String(f.phase)] ?? `第 ${Number(f.step) + 1} 轮决策`
+  }
   if (event.name === 'agent.tool.started') return `调用工具 · ${tool}`
   if (event.name === 'agent.tool') return `工具${f.status === 'success' ? '完成' : f.status === 'cancelled' ? '已取消' : '失败'} · ${tool}`
   if (event.name === 'agent.model.started') return `模型请求 · ${f.model} · 第 ${f.attempt} 次`
@@ -84,7 +87,8 @@ function label(event: RunEvent): string {
     'agent.started': '启动 Agent', 'agent.context': '构建上下文', 'context.compressed': '压缩历史上下文',
     'agent.tools.selected': '按上下文预算选择 MCP 工具',
     'agent.completed': 'Agent 执行完成', 'agent.failed': 'Agent 执行失败', 'answer.ready': '回答就绪',
-    'math.ingested': '规范化题目并保存向量', 'math.retrieval': '检索相似题与解法', 'math.native_verified': '程序数学核验完成',
+    'math.ingested': '保存题目与规范化文本', 'math.retrieval.started': '开始检索解题证据', 'math.retrieval': '检索相似题与解法', 'math.native_verified': '程序数学核验完成',
+    'context.evidence_selected': '找回相关历史原文', 'math.batch': '完成多题联合检索',
     'title.started': '处理会话标题', 'title.completed': '标题处理完成', 'title.failed': '标题未更新，回答已保存', 'session.saved': '保存会话结果', 'session.failed': '记录请求失败',
     'run.success': '本次回答已完成', 'run.failure': '本次回答失败', 'run.cancelled': '用户已取消', 'run.timed_out': '总时间预算已耗尽', 'run.interrupted': '后端重启，运行中断',
   }
