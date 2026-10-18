@@ -10,6 +10,8 @@ export async function checkBackend(directory = backendDirectory) {
     'src/bootstrap/container.ts',
     'src/modules/mcp/mcp.module.ts',
     'src/modules/observability/observability.module.ts',
+    'src/modules/auth/auth.module.ts',
+    'tests/auth-fixtures.ts',
     'tests/fixtures/mcp-server.mjs',
   ]
   const missing = (await Promise.all(required.map(async path => {
@@ -18,7 +20,7 @@ export async function checkBackend(directory = backendDirectory) {
   }))).filter(Boolean)
   if (missing.length) {
     throw new Error(`Incompatible integration backend at ${directory}. Missing: ${missing.join(', ')}. ` +
-      'CI BACKEND_REF must contain MCP Hub and run observability support; see .github/workflows/ci.yml and README.md.')
+      'CI BACKEND_REF must contain SSO authentication, MCP Hub and run observability support; see .github/workflows/ci.yml and README.md.')
   }
   return { directory, fixture: join(directory, 'tests/fixtures/mcp-server.mjs') }
 }

@@ -38,6 +38,13 @@ test('demo transport persists separate subjects, labels examples, and never requ
     assert.match(fallback.messages.at(-1).content, /暂时不能求解任意题目/)
     const restored = createDemoChatApi(subject, () => warnings++)
     assert.equal((await restored.list())[0].messages.length, 4)
+    const firstUser = createDemoChatApi(subject, () => warnings++, 'first-user')
+    const secondUser = createDemoChatApi(subject, () => warnings++, 'second-user')
+    assert.deepEqual(await firstUser.list(), [], 'signed-in users do not inherit anonymous demo history')
+    const privateDemo = await firstUser.create('private demo')
+    assert.deepEqual(await secondUser.list(), [], 'different accounts cannot view each other’s local demo history')
+    await assert.rejects(secondUser.getById(privateDemo.id), /不存在/)
+    assert.equal((await createDemoChatApi(subject, () => warnings++, 'first-user').list())[0].id, privateDemo.id)
     subject.value = 'chinese'
     assert.equal((await restored.list())[0].id, chinese.id)
     const expectedReplies = {

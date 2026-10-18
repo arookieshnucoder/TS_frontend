@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import AppIcon from './components/AppIcon.vue'
 import MessageContent from './components/MessageContent.vue'
 import McpHub from './components/McpHub.vue'
@@ -9,7 +9,9 @@ import SubjectAtmosphere from './components/SubjectAtmosphere.vue'
 import InteractionEffects from './components/InteractionEffects.vue'
 import { subjects, subjectOrder, type Subject } from './config/subjects'
 import { useAgentChat } from './composables/useAgentChat'
+import { authKey } from './composables/useAuth'
 import './styles.css'
+const auth = inject(authKey, undefined)
 
 /** 恢复上次学科；没有可用偏好时使用语文，仅影响界面初始选择。 */
 function savedSubject(): Subject {
@@ -243,17 +245,19 @@ onBeforeUnmount(() => {
         </div>
         <div v-if="!filteredSessions.length" class="search-empty"><AppIcon :name="query ? 'search' : activeSubject.icon" /><p>{{ query ? '没有找到相关对话' : activeSubject.emptyNote }}</p></div>
       </nav>
-      <McpHub v-if="!isDemo" />
-      <details v-else class="demo-tools"><summary><AppIcon name="code" /><span>探索工具</span><span class="demo-tools-label">本地演示</span><AppIcon name="chevron" /></summary><div><p>这里先专注体验学科对话与解题思路。</p><p>演示回答由本地示例生成，未连接模型与工具服务。</p></div></details>
+      <McpHub v-if="!isDemo && (!auth || auth.user.value?.role === 'admin')" />
+      <details v-if="isDemo" class="demo-tools"><summary><AppIcon name="code" /><span>探索工具</span><span class="demo-tools-label">本地演示</span><AppIcon name="chevron" /></summary><div><p>这里先专注体验学科对话与解题思路。</p><p>演示回答由本地示例生成，未连接模型与工具服务。</p></div></details>
       <div class="sidebar-bottom">
         <div class="local-note">
           <AppIcon name="lock" /><span>给思考一点自己的空间<small>{{ isDemo ? '演示对话仅保存在当前浏览器' : '对话保存在后端本地' }}</small></span>
         </div>
         <div class="profile">
           <span class="avatar">学</span>
-          <div><strong>保持好奇，慢慢生长</strong><span>你的专属学习空间</span></div>
-          <span class="profile-dot"></span>
+          <div><strong>{{ auth?.user.value?.username ?? '保持好奇，慢慢生长' }}</strong><span>{{ auth?.user.value?.role === 'admin' ? '管理员' : '你的专属学习空间' }}</span></div>
+          <button v-if="auth" class="account-logout" type="button" :disabled="auth.busy.value" @click="auth.logout">退出</button>
+          <span v-else class="profile-dot"></span>
         </div>
+        <p v-if="auth?.error.value" class="notice" role="alert">{{ auth.error.value }}</p>
       </div>
     </aside>
 
@@ -347,7 +351,7 @@ onBeforeUnmount(() => {
             >
           </article>
         </section>
-        <RunTimeline v-if="activeSession && !isDemo" :session-id="activeSession.id" :updated-at="activeSession.updatedAt" :pending="activeSession.sessionStatus === 'pending'" />
+        <RunTimeline v-if="activeSession && !isDemo && (!auth || auth.user.value?.role === 'admin')" :session-id="activeSession.id" :updated-at="activeSession.updatedAt" :pending="activeSession.sessionStatus === 'pending'" />
       </div>
 
       <footer class="composer-area">

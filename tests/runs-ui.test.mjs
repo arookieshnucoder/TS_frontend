@@ -19,7 +19,7 @@ test('run timeline ignores stale session results, handles auth, expands safe fie
     const path=String(url)
     if(path.includes('/sessions/a/')) return new Promise(resolve=>{releaseOld=()=>resolve(Response.json({data:{runs:[summary(id,'stale question')]}}))})
     if(path.includes('/sessions/empty/')) return Response.json({data:{runs:[]}})
-    if(options?.headers?.Authorization!=='Bearer token') return Response.json({error:{message:'请填写管理员令牌。'}},{status:401})
+    if(new Headers(options?.headers).get('Authorization')!=='Bearer token') return Response.json({error:{message:'请填写管理员令牌。'}},{status:401})
     if(path.endsWith(`/runs/${id}`)) return Response.json({data:{...summary(id,'new question'),events:[
       {sequence:1,name:'agent.fallback',elapsedMs:0,timestamp:new Date().toISOString(),fields:{to:'backup'}},
       {sequence:2,name:'run.failure',elapsedMs:100,timestamp:new Date().toISOString(),fields:{result:'<script>danger()</script>',password:'[REDACTED]'}},

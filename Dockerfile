@@ -7,6 +7,7 @@ COPY index.html env.d.ts tsconfig*.json vite.config.ts ./
 COPY src ./src
 COPY public ./public
 ENV VITE_API_BASE_URL=/api
+ENV VITE_CHAT_MODE=backend
 RUN npm run build
 
 FROM nginx:stable-alpine AS runtime

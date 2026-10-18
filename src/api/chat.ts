@@ -21,10 +21,15 @@ export async function request<T>(path: string, options?: RequestInit): Promise<T
   let response: Response
   try {
     response = await fetch(`${baseUrl}${path}`, {
-      ...options, signal: options?.signal ?? AbortSignal.timeout(10000),
+      ...options, credentials: 'include', signal: options?.signal ?? AbortSignal.timeout(10000),
+      headers: { ...Object.fromEntries(new Headers(options?.headers)),
+        ...(!['GET', 'HEAD'].includes(options?.method?.toUpperCase() ?? 'GET') ? { 'X-Requested-With': 'XMLHttpRequest' } : {}) },
     })
   } catch { throw new Error('无法连接后端、请求已取消或连接超时，请检查网络后重试。') }
   const body = await response.json().catch(() => null)
+  if (response.status === 401 && body?.error?.code === 'AUTH_REQUIRED' && typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('songjian-auth-required'))
+  }
   if (!response.ok) throw new ChatApiError(body?.error?.message ?? `请求失败（HTTP ${response.status}）。`, response.status, body?.data)
   if (!body || typeof body !== 'object' || !('data' in body)) throw new Error('后端响应格式不正确。')
   return body.data as T

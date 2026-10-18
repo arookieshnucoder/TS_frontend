@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, inject, onBeforeUnmount, ref } from 'vue'
 import { mcpApi, type McpServer } from '../api/mcp'
 import { adminToken } from '../api/management'
+import { authKey } from '../composables/useAuth'
+const auth = inject(authKey, undefined)
 
 // 服务配置以后台返回值为准，页面串行提交操作，卸载时取消未完成请求。
 const servers = ref<McpServer[]>([])
@@ -76,7 +78,7 @@ function changePermission(server: McpServer, event: Event) {
     <summary><span class="hub-symbol">◇</span> MCP Hub <span class="hub-count">{{ enabledCount }} 已启用</span></summary>
     <div class="hub-body" :aria-busy="busy">
       <p class="hub-help">连接工具，按需调用。配置在下一次回答时生效；停用会关闭连接。</p>
-      <details class="hub-auth">
+      <details v-if="!auth" class="hub-auth">
         <summary>远程管理认证</summary>
         <label>管理员令牌<input v-model="adminToken" type="password" autocomplete="off" aria-label="MCP 管理员令牌" placeholder="本机未配置令牌时可留空" /></label>
         <p class="hub-help">令牌仅保留在当前页面内存中。</p>

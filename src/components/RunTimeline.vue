@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref, watch } from 'vue'
+import { inject, onBeforeUnmount, ref, watch } from 'vue'
 import { runsApi, type RunSummary, type RunTrace, type RunEvent } from '../api/runs'
 import { adminToken } from '../api/management'
+import { authKey } from '../composables/useAuth'
+const auth = inject(authKey, undefined)
 
 // 按需加载运行摘要和事件详情；关闭面板或没有进行中任务时停止轮询。
 const props = defineProps<{ sessionId: string; updatedAt: number; pending: boolean }>()
@@ -111,7 +113,7 @@ function exportTrace(run: RunTrace) {
       <div class="timeline-toolbar">
         <span>记录工具、模型与恢复过程</span>
         <button type="button" :disabled="busy" @click="load()">刷新记录</button>
-        <button type="button" :aria-expanded="showAuth" @click="showAuth = !showAuth">管理认证</button>
+        <button v-if="!auth" type="button" :aria-expanded="showAuth" @click="showAuth = !showAuth">管理认证</button>
       </div>
       <label v-if="showAuth" class="timeline-auth">管理员令牌<input v-model="adminToken" type="password" autocomplete="off" aria-label="运行记录管理员令牌" placeholder="与 MCP Hub 共用，仅保存在内存中" /></label>
       <p v-if="error" class="timeline-error" role="alert">{{ error }}</p>

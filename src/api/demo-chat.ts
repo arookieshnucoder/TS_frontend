@@ -65,14 +65,15 @@ function exampleReply(subject: Subject, content: string): string {
 }
 
 /** 显式演示模式：按学科隔离本地会话，存储失败时保留内存数据并提示用户。 */
-export function createDemoChatApi(subject: Ref<Subject>, onStorageError: () => void): ChatApi {
+export function createDemoChatApi(subject: Ref<Subject>, onStorageError: () => void, userId?: string): ChatApi {
+  const prefix = userId ? `${storagePrefix}${userId}.` : storagePrefix
   const memory = new Map<Subject, SessionDto[]>()
   const copy = <T>(value: T): T => structuredClone(value)
   function read(key: Subject): SessionDto[] {
     if (memory.has(key)) return memory.get(key)!
     let sessions: SessionDto[] = []
     try {
-      const saved: unknown = JSON.parse(localStorage.getItem(storagePrefix + key) ?? '[]')
+      const saved: unknown = JSON.parse(localStorage.getItem(prefix + key) ?? '[]')
       if (Array.isArray(saved)) sessions = saved.filter((value): value is SessionDto =>
         value && typeof value.id === 'string' && typeof value.title === 'string' &&
         typeof value.updatedAt === 'string' && !Number.isNaN(Date.parse(value.updatedAt)) &&
@@ -84,7 +85,7 @@ export function createDemoChatApi(subject: Ref<Subject>, onStorageError: () => v
     return sessions
   }
   function save(key: Subject) {
-    try { localStorage.setItem(storagePrefix + key, JSON.stringify(read(key))) }
+    try { localStorage.setItem(prefix + key, JSON.stringify(read(key))) }
     catch { onStorageError() }
   }
   function find(key: Subject, id: string) {
