@@ -6,6 +6,22 @@ const storagePrefix = 'songjian.demo.v1.'
 
 function exampleReply(subject: Subject, content: string): string {
   const note = '> 本地演示 · 以下是预设学习示例，未调用 AI 模型。\n\n'
+  if (subject === 'english') {
+    const question = content.toLowerCase().replace(/\s+/g, ' ')
+    if (question.includes('why does emma borrow a novel') && question.includes('for her little brother')) {
+      return note + '### Follow the clue · 找到原文依据\n\n先抓住题干里的 **Why**：这道题问 Emma 借小说的目的。\n\n> Before going home, she borrows a novel for her little brother.\n\n原文的 **for her little brother** 对应选项 **C. To give it to her little brother.** 选项换了一种说法，意思相同。\n\n- A：文中没有提到准备考试。\n- B：坐公交去图书馆，不代表借书是为了在车上阅读。\n- D：借书对象是弟弟，文中没有提到学校。\n\n**阅读方法**：定位关键词 → 找到原句 → 对照同义表达，别把附近出现的细节当作原因。\n\n第1题答案：C'
+    }
+    if (question.includes('by the time we arrived at the station') && question.includes('the train')) {
+      return note + '### One past before another · 理清先后\n\n完整句子：**By the time we arrived at the station, the train had left.**\n\n参照时刻是过去的 **we arrived**。火车离开发生得更早，所以用过去完成时 **had + 过去分词**，对应 **C. had left**。\n\n**时间线**：the train left → we arrived at the station → now\n\n1. A. leaves：一般现在时，不符合这个过去场景。\n2. B. has left：现在完成时，以现在为参照，不能与此处的过去参照时刻搭配。\n3. D. will leave：一般将来时，不表示到站前已经发生的动作。\n\n小结：不要只背提示词，先问“哪个动作发生在另一个过去动作之前”。\n\n第1题答案：C'
+    }
+    if (question.includes('the hike was tiring') && question.includes('maya kept walking') && question.includes('sunrise')) {
+      return note + '### Read the turn · 读懂转折\n\n前一句说徒步 **tiring（令人疲惫）**，后一句却说 Maya **kept walking（继续行走）**。两句之间形成转折。\n\n应填 **A. However**：\n\n> The hike was tiring. However, Maya kept walking because she wanted to see the sunrise.\n\n- Therefore 表示“因此”，是因果关系。\n- For example 表示“例如”，引出例子。\n- Similarly 表示“同样地”，表达相似关系。\n\n这里要表达“虽然累，仍继续走”，所以 However 最合适。后半句的 because 则说明继续走的原因：她想看日出。\n\n第1题答案：A'
+    }
+    if (question.includes('leo was reluctant to speak') && question.includes('go last')) {
+      return note + '### A word in context · 从行为推断词义\n\n先暂时遮住 **reluctant**，看后面的行为线索：\n\n> He looked down and asked if he could go last.\n\nLeo 低下头，还请求最后一个发言，说明他面对全班讲话时有些不情愿或犹豫。因此选 **B. Unwilling or hesitant**。\n\nA 的“兴奋、迫不及待”和 C 的“大声、自信”都与行为线索相反；D 的“准备充分”也不能解释他想最后发言的表现。\n\n**词义提示**：reluctant 表示“不情愿的；犹豫的”，常见搭配为 **be reluctant to do something**。\n\n阅读时，人物的动作和反应往往比孤立的单词更能提供线索。\n\n第1题答案：B'
+    }
+    return note + '### Words into worlds · 从语境出发\n\n这是英语 Agent 的界面演示，暂时不能解答任意题目。你可以点击 **读懂一段、理清语法、补全逻辑、读懂一个词**，体验四个预设练习与双语解析。\n\n英语练习关注阅读理解、语法选择和完形填空；语境词义归在阅读中。作文和听力暂未开放。\n\n处理选择题时，可以先读题干，再定位原文依据，最后逐项核对选项。阅读或完形请保留完整短文、题目及 A–D 选项。'
+  }
   if (subject === 'math') {
     if (content.includes('x² - 5x + 6') || content.includes('x²−5x+6')) {
       return note + '### 把方程变成两个一次式\n\n由 $x^2-5x+6=(x-2)(x-3)$，得到：\n\n$$x=2\\quad\\text{或}\\quad x=3$$\n\n**检验**：$4-10+6=0$，$9-15+6=0$，两根都成立。\n\n小提示：寻找两个乘积为 6、和为 −5 的数，能帮助我们完成因式分解。'

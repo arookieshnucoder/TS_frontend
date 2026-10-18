@@ -43,16 +43,43 @@ test('demo transport persists separate subjects, labels examples, and never requ
     const expectedReplies = {
       chinese: [/苏轼的《定风波/, /观察|散步的路线/, /刘禹锡.*陋室铭/, /反复/],
       math: [/x=2/, /最小值 −3/, /sqrt\{7\}/, /frac\{1\}\{3\}/],
+      english: [/\bC\b[^\n]*little brother/i, /\bC\b[^\n]*had left/i, /\bA\b[^\n]*However/, /\bB\b[^\n]*(?:Unwilling|hesitant)/i],
     }
-    for (const key of ['chinese', 'math']) {
+    let verifiedCards = 0
+    for (const key of ['chinese', 'math', 'english']) {
       subject.value = key
       const exampleSession = await api.create('题卡验收')
+      assert.equal(subjects[key].suggestions.length, 4)
       for (const [index, card] of subjects[key].suggestions.entries()) {
         const result = await api.send(exampleSession.id, card.text, new AbortController().signal)
         assert.match(result.messages.at(-1).content, expectedReplies[key][index], `${key}: ${card.title}`)
         assert.doesNotMatch(result.messages.at(-1).content, /暂时不能/)
+        assert.equal(result.messages.at(-2).content, card.text, 'passage and option capitalization are preserved')
+        verifiedCards++
       }
     }
+    assert.equal(verifiedCards, 12, 'all three subjects retain four working cards')
+    const englishId = (await api.list())[0].id
+    const expectedEnglishEvidence = [/原文|依据/, /过去完成时|past perfect/i, /转折/, /不情愿|犹豫/]
+    for (const [index, card] of subjects.english.suggestions.entries()) {
+      for (const variant of [card.text.toUpperCase(), card.text.toLowerCase().replace(/\n/g, '\n  \n')]) {
+        const result = await api.send(englishId, variant, new AbortController().signal)
+        assert.equal(result.messages.at(-2).content, variant, 'matching does not alter the submitted English capitalization or spacing')
+        assert.match(result.messages.at(-1).content, expectedReplies.english[index], `English option stays correct when casing changes: ${card.title}`)
+        assert.match(result.messages.at(-1).content, expectedEnglishEvidence[index], `English answer explains its evidence: ${card.title}`)
+        assert.doesNotMatch(result.messages.at(-1).content, /暂时不能|这是语文 Agent|这是数学 Agent/)
+      }
+    }
+    for (const question of ['Please help me understand a new passage.', '作文开头：春望', '解方程 x² - 5x + 6 = 0']) {
+      const result = await api.send(englishId, question, new AbortController().signal)
+      const answer = result.messages.at(-1).content
+      assert.match(answer, /英语|English/i, 'an unrecognized English request stays in the English agent')
+      assert.doesNotMatch(answer, /这是语文 Agent|这是数学 Agent|情景交融|x=2/)
+      assert.match(answer, /本地演示/)
+    }
+    const englishRestored = createDemoChatApi(subject, () => warnings++)
+    assert.equal((await englishRestored.list())[0].id, englishId)
+    await assert.rejects(englishRestored.getById(chinese.id), /不存在/)
     assert.equal(requests, 0)
     assert.equal(warnings, 0)
   } finally {

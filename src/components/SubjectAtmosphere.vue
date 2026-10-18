@@ -23,7 +23,7 @@ defineProps<{ subject: Subject }>()
         <div class="vertical-poem">且将新火试新茶<br /><span>诗酒趁年华</span></div>
         <span class="landscape-seal">知<br />墨</span>
       </div>
-      <div v-else key="math" class="math-landscape">
+      <div v-else-if="subject === 'math'" key="math" class="math-landscape">
         <div class="math-grid"></div><div class="math-glow"></div>
         <svg class="geometry-scene" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" fill="none">
           <g class="coordinate-lines" stroke="currentColor" stroke-opacity=".11"><path d="M800 620h310m-265 70V325m-8 12 8-12 8 12m245 275 12 8-12 8" /><path d="M810 590c65 40 92 39 120-35s58-131 145-138" stroke-width="1.6" stroke-opacity=".5" /></g>
@@ -33,6 +33,31 @@ defineProps<{ subject: Subject }>()
         </svg>
         <span class="math-formula formula-one">f(x) = x²</span><span class="math-formula formula-two">a² + b² = c²</span><span class="math-formula formula-three">∞</span>
         <div class="math-coordinate">THINK / PROVE / DISCOVER<span>01 — ∞</span></div>
+      </div>
+      <div v-else key="english" class="language-landscape" lang="en">
+        <div class="language-light"></div><div class="language-baselines"></div>
+        <span class="language-glyph">Aa<span>the art of understanding</span></span>
+        <div class="language-sheet sheet-back"></div>
+        <div class="language-sheet sheet-front">
+          <span class="sheet-eyebrow">A READER'S NOTEBOOK</span>
+          <strong>Words<br />open worlds.</strong>
+          <span class="sheet-definition">context <em>/ˈkɒntekst/</em></span>
+          <p>The words around a word.<br />The world behind a sentence.</p>
+          <span class="sheet-underlined">Read. Notice. Understand.</span>
+          <span class="sheet-page">LEXICON — 01</span>
+        </div>
+        <svg class="language-route-scene" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" fill="none">
+          <g class="reading-route" stroke="currentColor" stroke-width="1">
+            <path d="M65 610c75-35 102 45 177 0s117-30 160 3" stroke-opacity=".1" stroke-dasharray="3 6" />
+            <path class="reading-underline" d="M67 615c60-27 105 36 170 0" stroke-opacity=".25" stroke-linecap="round" />
+            <path d="m394 608 9 5-10 3" stroke-opacity=".2" />
+          </g>
+          <g class="sentence-notes" fill="currentColor" font-family="Georgia, serif" font-size="12" font-style="italic"><text x="70" y="595" fill-opacity=".2">word</text><text x="209" y="647" fill-opacity=".16">context</text><text x="334" y="592" fill-opacity=".18">meaning</text></g>
+          <g class="grammar-annotation" stroke="currentColor" stroke-opacity=".13"><path d="M968 149h115m-115 8h66m-66 8h94m-64-40v12h62v-12" /><path class="annotation-sweep" d="M998 173h68" stroke-width="6" stroke-opacity=".09" /></g>
+        </svg>
+        <span class="language-fragment fragment-one">between<br /><em>the lines.</em></span>
+        <span class="language-fragment fragment-two">“</span>
+        <div class="language-margin-note">LOOK CLOSER. READ DEEPER.<span>言境 · LEXICON</span></div>
       </div>
     </Transition>
   </div>

@@ -28,6 +28,11 @@ const paths: Record<string, string> = {
   dice: 'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm2 4h.01M17 7h.01M12 12h.01M7 17h.01M17 17h.01',
   leaf: 'M20 3C9 1 2 8 5 16c8 4 17-2 15-13ZM3 22 16 8m-8 9v-5m0 5 6-1',
   chevron: 'm9 5 7 7-7 7',
+  language: 'm3 18 5-13 5 13M5 13h6m4-4h6m-6 0c0 5 1 8 6 10m-1-10c0 4-2 8-6 10M17 5v4',
+  reading: 'M4 3h13l3 3v15H4V3Zm13 0v4h3M8 10h8m-8 4h8m-8 4h4',
+  grammar: 'M3 7h18M7 3v8m10-8v8M5 16h4m-2-2v4m6-2 2 2 5-5M3 21h18',
+  link: 'm9 15 6-6m-6-2 3-3a5 5 0 0 1 7 7l-3 3m-1 3-3 3a5 5 0 0 1-7-7l3-3',
+  vocabulary: 'M4 3h14a2 2 0 0 1 2 2v16H6a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3Zm0 14h16M8 13l3-7 3 7m-5-2h4',
 }
 </script>
 

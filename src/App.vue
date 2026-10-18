@@ -7,12 +7,15 @@ import RunTimeline from './components/RunTimeline.vue'
 import SubjectSwitch from './components/SubjectSwitch.vue'
 import SubjectAtmosphere from './components/SubjectAtmosphere.vue'
 import InteractionEffects from './components/InteractionEffects.vue'
-import { subjects, type Subject } from './config/subjects'
+import { subjects, subjectOrder, type Subject } from './config/subjects'
 import { useAgentChat } from './composables/useAgentChat'
 import './styles.css'
 
 function savedSubject(): Subject {
-  try { return localStorage.getItem('songjian-subject') === 'math' ? 'math' : 'chinese' }
+  try {
+    const saved = localStorage.getItem('songjian-subject')
+    return subjectOrder.find(value => value === saved) ?? 'chinese'
+  }
   catch { return 'chinese' }
 }
 const subject = ref<Subject>(savedSubject())
@@ -37,7 +40,7 @@ const {
 const sidebarOpen = ref(window.innerWidth > 760)
 const query = ref('')
 const draft = ref('')
-const drafts: Record<Subject, string> = { chinese: '', math: '' }
+const drafts: Record<Subject, string> = { chinese: '', math: '', english: '' }
 const input = ref<HTMLTextAreaElement>()
 const sidebar = ref<HTMLElement>()
 const sidebarToggle = ref<HTMLButtonElement>()
@@ -277,12 +280,12 @@ onBeforeUnmount(() => {
         <section v-if="!activeSession?.messages.length" :key="subject" class="welcome">
           <div class="welcome-eyebrow"><span></span>{{ activeSubject.discipline }}<span></span></div>
           <div class="welcome-symbol"><AppIcon :name="activeSubject.icon" /><span class="symbol-orbit"></span><i></i></div>
-          <p class="welcome-overline">{{ activeSubject.eyebrow }}</p>
+          <p class="welcome-overline" :lang="subject === 'english' ? 'en' : 'zh-CN'">{{ activeSubject.eyebrow }}</p>
           <h1>{{ activeSubject.title }}<em>{{ activeSubject.titleAccent }}</em></h1>
           <p class="welcome-description">
             {{ activeSubject.description }}<br />{{ activeSubject.subdescription }}
           </p>
-          <div class="suggestion-heading"><span>从这里，开始探索</span><span>{{ subject === 'chinese' ? '拾字成光' : '循理而行' }} <AppIcon name="arrow-up-right" /></span></div>
+          <div class="suggestion-heading"><span>从这里，开始探索</span><span>{{ activeSubject.exploration }} <AppIcon name="arrow-up-right" /></span></div>
           <div class="suggestion-grid">
             <button
               v-for="(suggestion, index) in activeSubject.suggestions"
@@ -298,7 +301,7 @@ onBeforeUnmount(() => {
               <span class="suggestion-index">0{{ index + 1 }}</span><AppIcon class="suggestion-arrow" name="arrow-up-right" />
             </button>
           </div>
-          <p class="welcome-footnote"><span></span> {{ activeSubject.motto }} <span></span></p>
+          <p class="welcome-footnote" :lang="subject === 'english' ? 'en' : 'zh-CN'"><span></span> {{ activeSubject.motto }} <span></span></p>
         </section>
         <section v-else class="messages" aria-label="聊天记录">
           <div class="conversation-intro">

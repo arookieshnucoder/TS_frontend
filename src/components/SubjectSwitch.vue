@@ -1,21 +1,17 @@
 <script setup lang="ts">
 import AppIcon from './AppIcon.vue'
-import type { Subject } from '../config/subjects'
+import { subjects, subjectOrder, type Subject } from '../config/subjects'
 
 defineProps<{ modelValue: Subject; disabled?: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [subject: Subject] }>()
 </script>
 
 <template>
-  <div class="subject-switch" role="group" aria-label="切换学习学科" :class="{ 'is-math': modelValue === 'math' }">
+  <div class="subject-switch" role="group" aria-label="切换学习学科" :style="{ '--switch-index': subjectOrder.indexOf(modelValue) }">
     <span class="switch-slider" aria-hidden="true"></span>
-    <button type="button" :aria-pressed="modelValue === 'chinese'" :disabled="disabled" title="切换到语文研习室" @click="emit('update:modelValue', 'chinese')">
-      <span class="switch-icon chinese-switch-icon"><AppIcon name="book" /><i></i></span>
-      <span>语文</span>
-    </button>
-    <button type="button" :aria-pressed="modelValue === 'math'" :disabled="disabled" title="切换到数学探索室" @click="emit('update:modelValue', 'math')">
-      <span class="switch-icon math-switch-icon"><AppIcon name="orbit" /><i></i></span>
-      <span>数学</span>
+    <button v-for="key in subjectOrder" :key="key" type="button" :aria-pressed="modelValue === key" :disabled="disabled" :title="`切换到${subjects[key].discipline}`" @click="emit('update:modelValue', key)">
+      <span class="switch-icon" :class="`${key}-switch-icon`"><AppIcon :name="key === 'chinese' ? 'book' : subjects[key].icon" /><i></i></span>
+      <span>{{ subjects[key].label }}</span>
     </button>
   </div>
 </template>
