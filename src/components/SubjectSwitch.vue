@@ -2,6 +2,7 @@
 import AppIcon from './AppIcon.vue'
 import { subjects, subjectOrder, type Subject } from '../config/subjects'
 
+// 只发出学科变更事件，草稿保存和发送期间的切换限制由主页面处理。
 defineProps<{ modelValue: Subject; disabled?: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [subject: Subject] }>()
 </script>

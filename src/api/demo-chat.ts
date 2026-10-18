@@ -1,5 +1,5 @@
 import type { Ref } from 'vue'
-import { chatApi, type SessionDto } from './chat'
+import type { ChatApi, SessionDto } from './chat'
 import type { Subject } from '../config/subjects'
 
 const storagePrefix = 'songjian.demo.v1.'
@@ -64,7 +64,8 @@ function exampleReply(subject: Subject, content: string): string {
   return note + '### 在字里行间，发现自己的理解\n\n这是语文 Agent 的界面演示，暂时不能分析任意文章。点击诗词、阅读或写作示例，可以体验不同的学习场景。\n\n我们可以沿着这样的线索阅读：\n\n1. **读见文字**：抓住人物、意象和关键句。\n2. **读懂表达**：结合语境解释写法的作用。\n3. **写出理解**：用原文证据支撑自己的判断。'
 }
 
-export function createDemoChatApi(subject: Ref<Subject>, onStorageError: () => void): typeof chatApi {
+/** 显式演示模式：按学科隔离本地会话，存储失败时保留内存数据并提示用户。 */
+export function createDemoChatApi(subject: Ref<Subject>, onStorageError: () => void): ChatApi {
   const memory = new Map<Subject, SessionDto[]>()
   const copy = <T>(value: T): T => structuredClone(value)
   function read(key: Subject): SessionDto[] {

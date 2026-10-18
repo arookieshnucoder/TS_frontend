@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, ref } from 'vue'
 import { mcpApi, type McpServer } from '../api/mcp'
 import { adminToken } from '../api/management'
 
+// 服务配置以后台返回值为准，页面串行提交操作，卸载时取消未完成请求。
 const servers = ref<McpServer[]>([])
 const loaded = ref(false)
 const busy = ref(false)
@@ -64,7 +65,7 @@ async function toggle(server: McpServer, field: 'enabled' | 'allowMutations') {
   })
 }
 function changePermission(server: McpServer, event: Event) {
-  // Restore the server state until the backend accepts the change.
+  // 后端接受变更前先还原开关，避免界面显示尚未生效的授权。
   ;(event.target as HTMLInputElement).checked = server.allowMutations
   void toggle(server, 'allowMutations')
 }

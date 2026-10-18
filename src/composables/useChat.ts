@@ -1,8 +1,9 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import type { ChatSession, Message } from '../types/chat'
-import { chatApi, ChatApiError, type SessionDto } from '../api/chat'
+import { chatApi, ChatApiError, type ChatApi, type SessionDto } from '../api/chat'
 
-export function useChat(api: typeof chatApi = chatApi) {
+/** 管理会话加载、发送、取消和逐字展示；发送失败时保留输入草稿并还原消息。 */
+export function useChat(api: ChatApi = chatApi) {
   const sessions = ref<ChatSession[]>([])
   const activeId = ref('')
   const apiError = ref('')
@@ -19,7 +20,7 @@ export function useChat(api: typeof chatApi = chatApi) {
       return Promise.resolve()
     }
     const fullContent = message.content
-    // Keep emoji, combining marks and joined characters intact while revealing text.
+    // 按完整字符簇切分，避免逐字显示时拆散表情或组合字符。
     const characters = Array.from(new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(fullContent), part => part.segment)
     const rate = Math.max(80 / 1000, characters.length / 8000)
     const started = performance.now()
@@ -55,6 +56,7 @@ export function useChat(api: typeof chatApi = chatApi) {
       timer = setTimeout(tick, 16)
     })
   }
+  // 后端日期只在此处转换；展示状态始终从完整消息开始。
   const toSession = (dto: SessionDto): ChatSession => ({
     id: dto.id, title: dto.title, updatedAt: Date.parse(dto.updatedAt),
     sessionStatus: dto.sessionStatus, sessionError: dto.sessionError,
@@ -147,7 +149,7 @@ export function useChat(api: typeof chatApi = chatApi) {
       reportError(error)
       return false
     } finally {
-      // Remove optimistic messages on failure or cancellation; the composer keeps the draft.
+      // 失败或取消时撤销临时占位消息，输入框继续保留原草稿。
       if (session && sessions.value.includes(session)) session.messages = originalMessages
       generation = undefined
       pendingSessionId.value = null

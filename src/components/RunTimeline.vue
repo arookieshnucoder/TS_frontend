@@ -3,6 +3,7 @@ import { onBeforeUnmount, ref, watch } from 'vue'
 import { runsApi, type RunSummary, type RunTrace, type RunEvent } from '../api/runs'
 import { adminToken } from '../api/management'
 
+// 按需加载运行摘要和事件详情；关闭面板或没有进行中任务时停止轮询。
 const props = defineProps<{ sessionId: string; updatedAt: number; pending: boolean }>()
 const open = ref(false)
 const runs = ref<RunSummary[]>([])
@@ -13,6 +14,7 @@ const busy = ref(false)
 const error = ref('')
 const showAuth = ref(false)
 const statusLabels = { pending: '进行中', success: '已完成', failure: '失败', cancelled: '已取消', timed_out: '已超时', interrupted: '运行中断' }
+// 切换会话时增加代次并取消旧请求，迟到的响应不能覆盖新会话。
 let generation = 0
 let lifetime = new AbortController()
 let timer: ReturnType<typeof setTimeout> | undefined
@@ -66,6 +68,7 @@ watch(() => [props.updatedAt, props.pending], () => { if (open.value) void load(
 onBeforeUnmount(() => { disposed = true; generation++; lifetime.abort(); stopTimer() })
 function duration(ms?: number) { return ms === undefined ? '—' : ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(2)} s` }
 function time(value: string) { return new Date(value).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }) }
+/** 将后端事件翻译成可读的执行步骤；未知事件保留名称，便于排查新流程。 */
 function label(event: RunEvent): string {
   const f = event.fields
   const source = f.source as { serverId?: string; toolName?: string } | undefined

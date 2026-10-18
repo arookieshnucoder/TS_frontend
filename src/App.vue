@@ -11,6 +11,7 @@ import { subjects, subjectOrder, type Subject } from './config/subjects'
 import { useAgentChat } from './composables/useAgentChat'
 import './styles.css'
 
+/** 恢复上次学科；没有可用偏好时使用语文，仅影响界面初始选择。 */
 function savedSubject(): Subject {
   try {
     const saved = localStorage.getItem('songjian-subject')
@@ -73,6 +74,7 @@ const groups = computed(() =>
     },
   ].filter((group) => group.sessions.length),
 )
+// 每门学科保留自己的草稿，发送期间暂停切换，避免把回复展示到另一学科。
 function changeSubject(next: Subject) {
   if (next === subject.value || isPending.value || isLoading.value) return
   drafts[subject.value] = draft.value
@@ -81,7 +83,7 @@ function changeSubject(next: Subject) {
   query.value = ''
   copiedId.value = ''; copyError.value = ''
   followLatest.value = true
-  try { localStorage.setItem('songjian-subject', next) } catch { /* Storage can be unavailable in private browsing. */ }
+  try { localStorage.setItem('songjian-subject', next) } catch { /* 隐私模式可能禁用存储，当前学科仍保留在页面内存中。 */ }
   if (window.innerWidth <= 760) sidebarOpen.value = false
   nextTick(resizeInput)
 }
@@ -109,6 +111,7 @@ async function newChat() {
     input.value?.focus()
   })
 }
+// 只有发送成功才清空对应草稿；失败或取消时允许用户继续编辑重发。
 async function submit(text = draft.value) {
   if (!text.trim() || isSending.value || isPending.value || isLoading.value) return
   followLatest.value = true
@@ -119,6 +122,7 @@ async function submit(text = draft.value) {
     input.value?.focus()
   })
 }
+// 中文输入法确认候选字时不能触发发送；Shift+Enter 保留换行。
 function handleKeydown(event: KeyboardEvent) {
   if (event.key === 'Enter' && !event.shiftKey && !event.isComposing && event.keyCode !== 229) {
     event.preventDefault()
@@ -138,6 +142,7 @@ async function copyMessage(id: string, content: string) {
     copyError.value = '复制未成功，请选中回答文字手动复制。'
   }
 }
+// 用户主动向上阅读时停止跟随，靠近底部后才恢复自动滚动。
 function updateScrollPosition() {
   const list = messageList.value
   if (list) followLatest.value = list.scrollHeight - list.scrollTop - list.clientHeight < 80

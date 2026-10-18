@@ -1,5 +1,6 @@
 import { adminRequest } from './management'
 
+/** 前端 MCP 管理视图，包含连接状态、工具可用性和修改权限。 */
 export interface McpServer {
   id: string
   name: string

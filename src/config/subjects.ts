@@ -1,6 +1,8 @@
+/** 前端可切换的三种学科标识，用于主题、草稿和演示会话隔离。 */
 export type Subject = 'chinese' | 'math' | 'english'
 export const subjectOrder: Subject[] = ['chinese', 'math', 'english']
 
+/** 各学科的界面文案与示例题卡集中维护；这里只定义展示，不决定后端解题策略。 */
 export const subjects = {
   chinese: {
     label: '语文', name: '知墨', english: 'ZHI MO', discipline: '语文研习室', icon: 'brush',

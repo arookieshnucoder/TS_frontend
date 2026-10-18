@@ -1,7 +1,8 @@
 import katex from 'katex'
 
+/** 公式渲染片段；只有 math 分支携带可插入的 KaTeX HTML。 */
 export type MathSegment = { type: 'text'; text: string } | { type: 'math'; html: string; display: boolean }
-/** Only KaTeX-created markup is inserted. Ordinary model HTML always remains escaped text. */
+/** 只渲染有明确分隔符的公式，普通 HTML 保持转义文本；渲染失败保留原表达式。 */
 export function mathSegments(text: string): MathSegment[] {
   const segments: MathSegment[] = []
   const delimiters = /\$\$([\s\S]*?)\$\$|\\\[([\s\S]*?)\\\]|\\\(([^\n]*?)\\\)|(?<!\\)\$([^$\n]+?)\$/g

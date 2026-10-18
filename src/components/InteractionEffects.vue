@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
+// 光标光晕和点击波纹仅负责视觉反馈；遵循减少动画偏好，并在卸载时清理资源。
 const halo = ref<HTMLElement>()
 const ripples = ref<{ id: number; x: number; y: number }[]>([])
 const visible = ref(false)
@@ -13,6 +14,7 @@ let motionQuery: MediaQueryList | undefined
 const timers = new Set<ReturnType<typeof setTimeout>>()
 const mediaCleanups: (() => void)[] = []
 
+// 兼容两种媒体查询监听接口，注销函数集中收集，避免切换页面后继续响应。
 function observePreference(query: MediaQueryList) {
   if (typeof query.addEventListener === 'function') {
     query.addEventListener('change', onPreferenceChange)

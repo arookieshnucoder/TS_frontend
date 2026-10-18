@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Subject } from '../config/subjects'
+// 学科装饰背景仅依赖当前主题，不读取会话内容，也不参与解题。
 defineProps<{ subject: Subject }>()
 </script>
 

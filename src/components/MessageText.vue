@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { mathSegments, type MathSegment } from '../utils/math-content'
 
 const props = defineProps<{ content: string }>()
+/** 行内内容分成公式、粗体和代码，公式之外的内容始终按文本展示。 */
 type Segment = MathSegment | { type: 'strong'; children: MathSegment[] } | { type: 'code'; text: string }
 const segments = computed(() => props.content.split(/(\*\*[^*\n]+\*\*|`[^`\n]+`)/g).filter(Boolean).flatMap<Segment>(text => {
   if (text.startsWith('**') && text.endsWith('**')) return [{ type: 'strong', children: mathSegments(text.slice(2, -2)) }]

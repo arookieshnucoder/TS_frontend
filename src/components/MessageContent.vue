@@ -3,11 +3,11 @@ import { computed } from 'vue'
 import MessageText from './MessageText.vue'
 import 'katex/dist/katex.min.css'
 const props = defineProps<{ content: string }>()
+/** 有限 Markdown 块结构，交给 Vue 渲染，不直接插入模型提供的 HTML。 */
 type Block = { type: 'code'; content: string; language: string }
   | { type: 'text'; content: string; tag: 'p' | 'h2' | 'h3' | 'h4' | 'blockquote' }
   | { type: 'list'; items: string[]; tag: 'ol' | 'ul' }
-// Structural Markdown becomes Vue elements. User HTML and code are always text;
-// only bounded, untrusted-mode KaTeX output in MessageText can produce markup.
+// HTML 和代码内容保持转义；只有 MessageText 中经过限制的 KaTeX 输出会生成标记。
 const blocks = computed<Block[]>(() => props.content.split(/```/).flatMap((part, index): Block[] => {
   if (index % 2) {
     const newline = part.indexOf('\n')
