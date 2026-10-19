@@ -20,7 +20,7 @@ export async function checkBackend(directory = backendDirectory) {
   }))).filter(Boolean)
   if (missing.length) {
     throw new Error(`Incompatible integration backend at ${directory}. Missing: ${missing.join(', ')}. ` +
-      'CI BACKEND_REF must contain SSO authentication, MCP Hub and run observability support; see .github/workflows/ci.yml and README.md.')
+      'Use the latest backend default branch with SSO authentication, MCP Hub and run observability support; see .github/workflows/ci.yml.')
   }
   return { directory, fixture: join(directory, 'tests/fixtures/mcp-server.mjs') }
 }

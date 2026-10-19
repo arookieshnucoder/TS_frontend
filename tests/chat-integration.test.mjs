@@ -42,7 +42,7 @@ test('real HTTP sessions and messages restore after backend restart; failures, d
     async function startBackend() {
       const dependencies = createDependencies({ agentModel: model, logger: { info() {}, error() {} } }, config)
       assert.equal(typeof dependencies.agentHarness?.run, 'function',
-        'Incompatible backend: this test requires agentModel injection and AgentHarness. Check the backend checkout and CI BACKEND_REF (see README.md).')
+        'Incompatible backend: this test requires agentModel injection and AgentHarness. Use the latest backend default branch (see .github/workflows/ci.yml).')
       server = createApp(config, dependencies).listen(0, '127.0.0.1')
       await new Promise(resolve => server.once('listening', resolve))
       const origin = `http://127.0.0.1:${server.address().port}`
