@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import AppIcon from './components/AppIcon.vue'
 import MessageContent from './components/MessageContent.vue'
 import McpHub from './components/McpHub.vue'
@@ -12,6 +12,11 @@ import { useAgentChat } from './composables/useAgentChat'
 import { authKey } from './composables/useAuth'
 import './styles.css'
 const auth = inject(authKey, undefined)
+const isAdmin = computed(() => auth?.user.value?.role === 'admin')
+const WorkflowWorkbench = defineAsyncComponent(() => import('./components/workflows/WorkflowWorkbench.vue'))
+const workflowOpen = ref(false), workflowRunId = ref<string>()
+function openWorkflow(runId?: string) { workflowRunId.value = runId; workflowOpen.value = true }
+watch(isAdmin, value => { if (!value) { workflowOpen.value = false; workflowRunId.value = undefined } })
 
 /** 恢复上次学科；没有可用偏好时使用语文，仅影响界面初始选择。 */
 function savedSubject(): Subject {
@@ -188,7 +193,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="chat-app" :data-subject="subject" :class="{ 'sidebar-hidden': !sidebarOpen }">
+  <div class="chat-app" :data-subject="subject" :class="{ 'sidebar-hidden': !sidebarOpen }" :inert="workflowOpen">
     <InteractionEffects />
     <button
       v-if="sidebarOpen"
@@ -245,7 +250,8 @@ onBeforeUnmount(() => {
         </div>
         <div v-if="!filteredSessions.length" class="search-empty"><AppIcon :name="query ? 'search' : activeSubject.icon" /><p>{{ query ? '没有找到相关对话' : activeSubject.emptyNote }}</p></div>
       </nav>
-      <McpHub v-if="!isDemo && (!auth || auth.user.value?.role === 'admin')" />
+      <button v-if="!isDemo && isAdmin" class="workflow-entry" type="button" @click="openWorkflow()"><AppIcon name="code" /><span>工作流工作台<small>流程定义 · 运行观测</small></span><span class="workflow-admin">ADMIN</span></button>
+      <McpHub v-if="!isDemo && isAdmin" />
       <details v-if="isDemo" class="demo-tools"><summary><AppIcon name="code" /><span>探索工具</span><span class="demo-tools-label">本地演示</span><AppIcon name="chevron" /></summary><div><p>这里先专注体验学科对话与解题思路。</p><p>演示回答由本地示例生成，未连接模型与工具服务。</p></div></details>
       <div class="sidebar-bottom">
         <div class="local-note">
@@ -351,7 +357,7 @@ onBeforeUnmount(() => {
             >
           </article>
         </section>
-        <RunTimeline v-if="activeSession && !isDemo && (!auth || auth.user.value?.role === 'admin')" :session-id="activeSession.id" :updated-at="activeSession.updatedAt" :pending="activeSession.sessionStatus === 'pending'" />
+        <RunTimeline v-if="activeSession && !isDemo && isAdmin" :session-id="activeSession.id" :updated-at="activeSession.updatedAt" :pending="activeSession.sessionStatus === 'pending'" @open-canvas="openWorkflow" />
       </div>
 
       <footer class="composer-area">
@@ -414,4 +420,10 @@ onBeforeUnmount(() => {
       </footer>
     </main>
   </div>
+  <WorkflowWorkbench v-if="workflowOpen && isAdmin" :subject="subject" :session-id="activeSession?.id" :initial-run-id="workflowRunId" @close="workflowOpen = false" />
 </template>
+
+<style scoped>
+.workflow-entry { display:flex;align-items:center;gap:10px;width:100%;padding:14px 18px;border:0;border-top:1px solid #e4e9de;background:transparent;color:#718265;text-align:left;cursor:pointer;flex-shrink:0; }
+.workflow-entry:hover { background:#f0f4e9; }.workflow-entry>svg { width:17px;height:17px; }.workflow-entry>span { font-size:11px; }.workflow-entry small { display:block;font-size:9px;color:#9aa78f;margin-top:3px; }.workflow-entry .workflow-admin { margin-left:auto;font-size:8px;letter-spacing:1px;padding:3px 5px;border:1px solid #dfe8d6;border-radius:4px;color:#99aa89; }
+</style>

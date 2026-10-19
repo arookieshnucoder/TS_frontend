@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { inject, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, inject, onBeforeUnmount, ref, watch } from 'vue'
 import { runsApi, type RunSummary, type RunTrace, type RunEvent } from '../api/runs'
-import { adminToken } from '../api/management'
 import { authKey } from '../composables/useAuth'
 const auth = inject(authKey, undefined)
+const isAdmin = computed(() => auth?.user.value?.role === 'admin')
+const emit = defineEmits<{ openCanvas: [runId: string] }>()
 
 // 按需加载运行摘要和事件详情；关闭面板或没有进行中任务时停止轮询。
 const props = defineProps<{ sessionId: string; updatedAt: number; pending: boolean }>()
@@ -14,7 +15,6 @@ const loadingDetails = ref<Record<string, boolean>>({})
 const cursor = ref<string>()
 const busy = ref(false)
 const error = ref('')
-const showAuth = ref(false)
 const statusLabels = { pending: '进行中', success: '已完成', failure: '失败', cancelled: '已取消', timed_out: '已超时', interrupted: '运行中断' }
 // 切换会话时增加代次并取消旧请求，迟到的响应不能覆盖新会话。
 let generation = 0
@@ -31,7 +31,7 @@ function schedule() {
 }
 function fail(e: unknown) { error.value = e instanceof Error ? e.message : '运行记录加载失败。' }
 async function load(older = false) {
-  if (busy.value || disposed) return
+  if (busy.value || disposed || !isAdmin.value) return
   const current = generation, sessionId = props.sessionId
   busy.value = true; error.value = ''
   try {
@@ -114,15 +114,13 @@ function exportTrace(run: RunTrace) {
 </script>
 
 <template>
-  <details class="run-timeline" @toggle="toggle">
+  <details v-if="isAdmin" class="run-timeline" @toggle="toggle">
     <summary><span>执行流程</span><small>每个问题的运行记录</small></summary>
     <div class="timeline-body" :aria-busy="busy">
       <div class="timeline-toolbar">
         <span>记录工具、模型与恢复过程</span>
         <button type="button" :disabled="busy" @click="load()">刷新记录</button>
-        <button v-if="!auth" type="button" :aria-expanded="showAuth" @click="showAuth = !showAuth">管理认证</button>
       </div>
-      <label v-if="showAuth" class="timeline-auth">管理员令牌<input v-model="adminToken" type="password" autocomplete="off" aria-label="运行记录管理员令牌" placeholder="与 MCP Hub 共用，仅保存在内存中" /></label>
       <p v-if="error" class="timeline-error" role="alert">{{ error }}</p>
       <p v-if="busy" class="timeline-empty" role="status">正在加载运行记录…</p>
       <p v-if="!busy && !runs.length && !error" class="timeline-empty">还没有运行记录。新问题的处理过程会保存在这里。</p>
@@ -137,6 +135,7 @@ function exportTrace(run: RunTrace) {
           <p class="run-meta">{{ time(run.startedAt) }} · {{ run.eventCount }} 个事件<br />运行 {{ run.id }} · 请求 {{ run.requestId }}</p>
           <p v-if="loadingDetails[run.id]" class="timeline-empty" role="status">加载详情…</p>
           <template v-if="traces[run.id]">
+            <button type="button" class="trace-export" @click="emit('openCanvas', run.id)">在画布中查看</button>
             <button type="button" class="trace-export" @click="exportTrace(traces[run.id]!)">导出 JSON</button>
             <ol class="run-events">
               <li v-for="event in traces[run.id]!.events" :key="event.sequence">

@@ -17,6 +17,9 @@ export default defineConfig(({ mode }) => {
     // Repository policy forbids batch deletion. Old build artifacts are left for manual cleanup.
     build: { emptyOutDir: false },
     server: {
+      // Only this browser-safe contract is shared. Never expose backend traces,
+      // session files or credentials through Vite's filesystem endpoint.
+      fs: { allow: [fileURLToPath(new URL('.', import.meta.url)), fileURLToPath(new URL('../backend/src/modules/workflows/definition.ts', import.meta.url))] },
       port,
       proxy: {
         '/api': {

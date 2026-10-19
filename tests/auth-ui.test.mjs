@@ -14,7 +14,7 @@ test('SSO UI uses real HTTP: registration, mismatch, login errors, reload, role 
   const { createApp, nextTick } = await import('vue')
   const vite = await createTestServer({ vue: true })
   const originalFetch = globalThis.fetch
-  let app, server, deps, cookie = '', chatRequests = 0, offline = false
+  let app, server, deps, cookie = '', chatRequests = 0, workflowRequests = 0, offline = false
   const root = document.createElement('div'); document.body.append(root)
   const wait = (predicate, label) => waitForUI(predicate, { root, label, timeoutMs: 6000 })
   async function input(id, value) {
@@ -36,6 +36,7 @@ test('SSO UI uses real HTTP: registration, mismatch, login errors, reload, role 
     globalThis.fetch = async (path, options = {}) => {
       if (offline) throw new Error('offline')
       if (String(path).includes('/chat/')) chatRequests++
+      if (/workflows|observability/.test(String(path))) workflowRequests++
       assert.equal(options.credentials, 'include')
       const response = await originalFetch(new URL(path, origin), { ...options, headers: { ...options.headers, Cookie: cookie } })
       const setCookie = response.headers.get('set-cookie')
@@ -55,6 +56,7 @@ test('SSO UI uses real HTTP: registration, mismatch, login errors, reload, role 
     await wait(() => root.querySelector('.chat-app'), 'registered workspace')
     assert.match(root.querySelector('.profile').textContent, /admin@example.com.*管理员/)
     assert.ok(root.querySelector('.mcp-hub'))
+    assert.ok(root.querySelector('.workflow-entry'))
     assert.ok(cookie.startsWith('songjian_sso='))
     assert.equal(window.localStorage.length, 0, 'credentials and session tokens are not written to localStorage')
     app.unmount(); mount()
@@ -69,6 +71,9 @@ test('SSO UI uses real HTTP: registration, mismatch, login errors, reload, role 
     await input('#auth-email', 'normal@example.com'); await input('#auth-password', 'secure password'); await input('#auth-confirmation', 'secure password'); await submit()
     await wait(() => root.querySelector('.chat-app'), 'ordinary user workspace')
     assert.equal(root.querySelector('.mcp-hub'), null)
+    assert.equal(root.querySelector('.workflow-entry'), null)
+    assert.equal(root.querySelector('.run-timeline'), null)
+    assert.equal(workflowRequests,0,'ordinary workspace never requests workflow definitions or traces')
     assert.doesNotMatch(root.querySelector('.profile').textContent, /管理员/)
     cookie = 'songjian_sso=invalid'
     const { request } = await vite.ssrLoadModule('/src/api/chat.ts')
