@@ -22,7 +22,9 @@ export function useChat(api: ChatApi = chatApi) {
     const fullContent = message.content
     // 按完整字符簇切分，避免逐字显示时拆散表情或组合字符。
     const characters = Array.from(new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(fullContent), part => part.segment)
-    const rate = Math.max(80 / 1000, characters.length / 8000)
+    // The HTTP response already contains the reviewed answer. Keep the entrance
+    // animation brief so reading and the next question are not delayed by seconds.
+    const rate = Math.max(300 / 1000, characters.length / 600)
     const started = performance.now()
     message.content = ''
     message.status = 'streaming'

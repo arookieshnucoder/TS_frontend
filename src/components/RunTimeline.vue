@@ -128,8 +128,8 @@ function exportTrace(run: RunTrace) {
         <summary>
           <span class="run-dot" :data-status="run.status" />
           <span class="run-question">{{ run.question }}</span>
-          <span class="run-status">{{ statusLabels[run.status] }}</span>
-          <span class="run-duration">{{ duration(run.durationMs) }}</span>
+          <span class="run-status">{{ run.status === 'pending' && run.answerDurationMs !== undefined ? '已答复 · 整理经验中' : statusLabels[run.status] }}</span>
+          <span class="run-duration" :title="run.answerDurationMs !== undefined ? '从提交到复核答案就绪的耗时' : '运行总耗时'">{{ duration(run.answerDurationMs ?? run.durationMs) }}</span>
         </summary>
         <div class="run-detail">
           <p class="run-meta">{{ time(run.startedAt) }} · {{ run.eventCount }} 个事件<br />运行 {{ run.id }} · 请求 {{ run.requestId }}</p>

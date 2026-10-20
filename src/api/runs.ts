@@ -5,7 +5,7 @@ export type RunStatus = 'pending' | 'success' | 'failure' | 'cancelled' | 'timed
 /** 运行列表中的摘要信息，提供状态、耗时和事件数量，详情按需加载。 */
 export interface RunSummary {
   id: string; sessionId: string; requestId: string; userMessageId: string; assistantMessageId?: string
-  question: string; status: RunStatus; startedAt: string; finishedAt?: string; durationMs?: number
+  question: string; status: RunStatus; startedAt: string; finishedAt?: string; durationMs?: number; answerDurationMs?: number
   eventCount: number; droppedEvents: number
 }
 /** 运行追踪中的一个有序事件，记录发生时间、相对耗时和结构化字段。 */

@@ -12,9 +12,9 @@ test('admin run timeline ignores stale sessions, expands safe fields, opens canv
   const {createApp,nextTick,ref,h}=await import('vue')
   const vite=await createTestServer({vue:true})
   const originalFetch=globalThis.fetch
-  let app,releaseOld,openedCanvas
+  let app,releaseOld,openedCanvas,learning=false
   const id='100000000000000001',oldId='100000000000000000'
-  const summary=(id,question)=>({id,sessionId:'b',requestId:'request',userMessageId:'q',question,status:'failure',startedAt:new Date().toISOString(),eventCount:2,droppedEvents:0,durationMs:100})
+  const summary=(id,question)=>({id,sessionId:'b',requestId:'request',userMessageId:'q',question,status:learning?'pending':'failure',startedAt:new Date().toISOString(),eventCount:2,droppedEvents:0,durationMs:100,...(learning?{answerDurationMs:50}:{})})
   globalThis.fetch=async(url,options)=>{
     const path=String(url)
     if(path.includes('/sessions/a/')) return new Promise(resolve=>{releaseOld=()=>resolve(Response.json({data:{runs:[summary(id,'stale question')]}}))})
@@ -44,6 +44,8 @@ test('admin run timeline ignores stale sessions, expands safe fields, opens canv
     button('在画布中查看').click();assert.equal(openedCanvas,id)
     button('加载更早记录').click();await settle(()=>root.querySelectorAll('.run-entry').length===2)
     assert.match(root.textContent,/older question/);assert.equal(window.localStorage.length,0)
+    learning=true;button('刷新记录').click();await settle(()=>root.textContent.includes('已答复 · 整理经验中'))
+    assert.equal(root.querySelector('.run-duration').textContent,'50 ms')
     sessionId.value='empty';await nextTick();await settle(()=>root.textContent.includes('还没有运行记录'))
     assert.equal(root.querySelectorAll('.run-entry').length,0)
   }finally{app?.unmount();await window.happyDOM.abort();globalThis.fetch=originalFetch;await vite.close()}
