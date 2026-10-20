@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { request } from './chat'
+import { request } from './http'
 
 // 管理员令牌仅保存在页面内存中，不写入浏览器存储或构建产物。
 export const adminToken = ref('')

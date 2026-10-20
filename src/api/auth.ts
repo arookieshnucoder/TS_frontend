@@ -1,4 +1,4 @@
-import { request } from './chat'
+import { request } from './http'
 
 export interface AuthUser {
   userId: string

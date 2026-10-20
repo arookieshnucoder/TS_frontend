@@ -1,6 +1,6 @@
 import { ref, type InjectionKey } from 'vue'
 import { authApi, type AuthUser } from '../api/auth'
-import { ChatApiError } from '../api/chat'
+import { ChatApiError } from '../api/http'
 import { adminToken } from '../api/management'
 
 /** Only public identity lives in memory. The browser owns the HttpOnly session cookie. */

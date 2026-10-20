@@ -13,6 +13,7 @@ export function useChat(api: ChatApi = chatApi) {
   const pendingSessionId = ref<string | null>(null)
   const activeSession = computed(() => sessions.value.find(session => session.id === activeId.value))
   let disposed = false
+  let loadVersion = 0
   let generation: AbortController | undefined
   let finishTyping: (() => void) | undefined
   function revealReply(message: Message): Promise<void> {
@@ -75,15 +76,16 @@ export function useChat(api: ChatApi = chatApi) {
   }
   async function loadSessions() {
     if (isPending.value || pendingSessionId.value) return
+    const version = ++loadVersion
     isLoading.value = true
     apiError.value = ''
     try {
       const data = await api.list()
-      if (disposed) return
+      if (disposed || version !== loadVersion) return
       sessions.value = data.map(toSession).sort((a, b) => b.updatedAt - a.updatedAt)
       if (!sessions.value.some(session => session.id === activeId.value)) activeId.value = sessions.value[0]?.id ?? ''
-    } catch (error) { reportError(error) }
-    finally { if (!disposed) isLoading.value = false }
+    } catch (error) { if (version === loadVersion) reportError(error) }
+    finally { if (!disposed && version === loadVersion) isLoading.value = false }
   }
   onMounted(loadSessions)
   async function selectSession(id: string): Promise<boolean> {
